@@ -97,8 +97,7 @@ class SPDTrainDataset(SPDDataset):
         return torch.tensor(np.concatenate(new_datasets, axis=0))
 
 
-def get_spd_datasets(dataset_dir=dataset_dir, config={}, verbose=False):
-    datasets = SPDDataset(dataset_dir, config)
+def get_spd_dataloaders(datasets, config, verbose=False):
     train_dataset, val_dataset, test_dataset = datasets.train_dataset, datasets.val_dataset, datasets.test_dataset
     train_dataloader = DataLoader(SPDTrainDataset(), batch_size=config.get(
         'batch_size', 64), shuffle=config.get('shuffle', True))
@@ -119,4 +118,4 @@ def get_spd_datasets(dataset_dir=dataset_dir, config={}, verbose=False):
 
 # Download and Test Dataset
 if __name__ == "__main__":
-    get_spd_datasets(verbose=True)
+    get_spd_datasets(SPDDataset(dataset_dir, {}), {}, verbose=True)
