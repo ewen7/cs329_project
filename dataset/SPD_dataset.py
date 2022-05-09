@@ -14,9 +14,8 @@ torch.manual_seed(1024)
 dataset_dir = os.path.join(os.path.dirname(os.path.realpath(
     __file__)), 'SPD/healthcare-dataset-stroke-data.csv')
 
+
 # Stroke Prediction Dataset
-
-
 class SPDDataset(Dataset):
     def __init__(
         self,
