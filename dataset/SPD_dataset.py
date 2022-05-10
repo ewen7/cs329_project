@@ -25,6 +25,7 @@ class SPDDataset(Dataset):
         self.dataset = pd.read_csv(dataset_dir).dropna()
         self.feature_to_loc = {c: i for i,
                                c in enumerate(self.dataset.columns)}
+        self.dataset = self.dataset[self.dataset['gender'] != 'Other']
         for header_str in ["gender", "Residence_type", "ever_married", "work_type", "smoking_status"]:
             self.dataset[header_str] = self.dataset[header_str].astype(
                 'category').cat.codes
@@ -97,25 +98,18 @@ class SPDTrainDataset(SPDDataset):
         return torch.tensor(np.concatenate(new_datasets, axis=0))
 
 
-def get_spd_dataloaders(datasets, config, verbose=False):
+def get_spd_datasets(dataset_dir=dataset_dir, config={}, verbose=False):
+    datasets = SPDDataset(dataset_dir, config)
     train_dataset, val_dataset, test_dataset = datasets.train_dataset, datasets.val_dataset, datasets.test_dataset
-    train_dataloader = DataLoader(SPDTrainDataset(), batch_size=config.get(
-        'batch_size', 64), shuffle=config.get('shuffle', True))
-    val_dataloader = DataLoader(val_dataset, batch_size=config.get(
-        'batch_size', 64), shuffle=config.get('shuffle', True))
-    test_dataloader = DataLoader(test_dataset, batch_size=config.get(
-        'batch_size', 64), shuffle=config.get('shuffle', True))
     if verbose:
-        data = next(iter(train_dataloader))
-        print("Data Shape: batch_size, data_fields")
-        print("  ", data.shape)
+        print("Data Shape: train_size, data_fields")
+        print("  ", train_dataset.shape)
         print("\""*40)
         print("Train Size: ", len(train_dataset))
         print("Val Size:   ", len(val_dataset))
         print("Test Size:  ", len(test_dataset))
-    return train_dataloader, val_dataloader, test_dataloader
-
+    return train_dataset, val_dataset, test_dataset
 
 # Download and Test Dataset
 if __name__ == "__main__":
-    get_spd_datasets(SPDDataset(dataset_dir, {}), {}, verbose=True)
+    get_spd_datasets(verbose=True)
