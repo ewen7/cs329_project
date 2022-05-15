@@ -3,9 +3,9 @@ import torch
 import numpy as np
 from matplotlib import pyplot as plt
 import active_learning
-from train import train
-from eval_fairness import eval_fairness
-import models
+from train import train_model
+from eval import eval_fairness
+from models import init_model
 import dataset
 
 
@@ -17,18 +17,8 @@ def prep_dataset(args):
     """
     # TODO
     dataset = None
-    # get from dataset/*.py
+    # get from dataset/*.ily
     return dataset
-    
-
-def init_model(args):
-    """
-    Initializes a model based on the value of args.model (either 'LR' or 'NN'?)
-    """
-    # TODO
-    model = None
-    # get from models.py
-    return model
 
 
 def run(args):
@@ -39,9 +29,9 @@ def run(args):
 
         model = init_model(args)
 
-        train(model, dataset, args)
+        train_model(model, dataset, args)
 
-        eval_fairness(model, dataset, args)
+        eval(model, dataset, args)
 
         proposed_data = active_learning.run(model, dataset, args)
         

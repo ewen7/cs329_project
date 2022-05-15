@@ -17,6 +17,7 @@ class BiasedSPDDataset(Dataset):
         # args.percent_labelled
         datasets = SPDDataset(dataset_dir=dataset_dir, config=args)
         self.train_dataset, self.val_dataset, self.test_dataset = datasets.train_dataset, datasets.val_dataset, datasets.test_dataset
+        print("train", self.train_dataset[0].shape)
         self.labeled_train_split, self.unlabeled_train_split = self.redistribute_dataset(
             self.train_dataset,
             datasets.feature_to_loc,
@@ -85,12 +86,16 @@ class BiasedSPDDataset(Dataset):
         self.unlabeled_train_split = np.ma.masked_where(
             np.arange(len(self.unlabeled_train_split)) == proposed_data_indices, self.unlabeled_train_split
         )
+    
+    def get_xy_split(self, split): # split should be 'labeled' or 'unlabeled'
+        
+        return X_train, y_train
 
 # Download and Test Dataset
 if __name__ == "__main__":
     dataset = BiasedSPDDataset({})
-    print("dataset.labeled_train_split: ", len(dataset.labeled_train_split))
-    print("dataset.unlabeled_train_split: ", len(dataset.unlabeled_train_split))
+    print("dataset.labeled_train_split: ", len(dataset.labeled_train_split), dataset.labeled_train_split[0])
+    print("dataset.unlabeled_train_split: ", len(dataset.unlabeled_train_split), dataset.unlabeled_train_split[0])
     dataset.update(torch.tensor([0, 1, 2, 3]))
     print("dataset.labeled_train_split: ", len(dataset.labeled_train_split))
     print("dataset.unlabeled_train_split: ", len(dataset.unlabeled_train_split))
