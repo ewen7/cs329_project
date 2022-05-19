@@ -1,4 +1,5 @@
-from SPD_dataset import SPDDataset
+from builtins import breakpoint
+from dataset.SPD_dataset import SPDDataset
 from torch.utils.data import Dataset
 import numpy as np
 import copy
@@ -21,10 +22,7 @@ class BiasedSPDDataset(Dataset):
         self.labeled_train_split, self.unlabeled_train_split = self.redistribute_dataset(
             self.train_dataset,
             datasets.feature_to_loc,
-            args.get('feature_name', 'gender'),
-            args.get('feature_distribution', [0.5]*2),
-            args.get('equalize_dataset', False),
-            args.get('dataset_split', 0.5),
+            args
         )
 
     def __getitem__(self, index):
@@ -37,22 +35,18 @@ class BiasedSPDDataset(Dataset):
         self, 
         dataset, 
         feature_to_loc, 
-        feature_name, 
-        feature_distribution, 
-        equalize_dataset, 
-        dataset_split):
-        feature_index = feature_to_loc[feature_name]
-        assert dataset_split <= 1
-        total = len(dataset) * dataset_split
+        args):
+        feature_index = feature_to_loc[args.protected_feature]
+        assert args.dataset_split <= 1
+        total = len(dataset) * args.dataset_split
         _, counts = np.unique(
             np.array(dataset[:, feature_index]), return_counts=True)
-        assert len(counts) == len(feature_distribution)
+        assert len(counts) == len(args.feature_distribution)
         
-        if equalize_dataset:
+        if args.equalize_dataset:
             total = np.min(counts) * len(counts)
 
-        feature_distribution = np.array(
-            feature_distribution) / sum(feature_distribution)
+        feature_distribution = np.array(args.feature_distribution) / sum(args.feature_distribution)
         intended_counts = total * feature_distribution
         feature_masks = [np.ma.masked_less(np.arange(
             count), intended_counts[i], copy=True).mask for i, count in enumerate(counts)]
@@ -75,20 +69,26 @@ class BiasedSPDDataset(Dataset):
         labelled_datasets = torch.tensor(np.concatenate(labelled_datasets, axis=0))
         unlabelled_datasets = torch.tensor(np.concatenate(unlabelled_datasets, axis=0))
         
-        return labelled_datasets, unlabelled_dataset
+        return labelled_datasets, unlabelled_datasets
 
     def update(self, proposed_data_indices):
-        new_data_points = torch.index_select(torch.tensor(self.unlabeled_train_split), 0, proposed_data_indices)
+        new_data_points = torch.index_select(self.unlabeled_train_split, 0, proposed_data_indices)
+        
         self.labeled_train_split = torch.tensor(np.concatenate([self.labeled_train_split, new_data_points], axis=0))
-        # Random Permutation of labelled dataset
         self.labeled_train_split = self.labeled_train_split[torch.randperm(self.labeled_train_split.size()[0])]
         
-        self.unlabeled_train_split = np.ma.masked_where(
-            np.arange(len(self.unlabeled_train_split)) == proposed_data_indices, self.unlabeled_train_split
-        )
+        still_unlabeled = torch.ones(self.unlabeled_train_split.shape[0], dtype=bool)
+        still_unlabeled[proposed_data_indices] = False
+        self.unlabeled_train_split = self.unlabeled_train_split[still_unlabeled]
     
-    def get_xy_split(self, split): # split should be 'labeled' or 'unlabeled'
+    def get_xy_split(self, split): # split should be 'labeled' or 'unlabeled' or 'test
+        if split == 'labeled': train_split = self.labeled_train_split 
+        elif split == 'unlabeled': train_split = self.unlabeled_train_split 
+        elif split == 'test': train_split = self.test_dataset
+        else: raise Exception("unknown split")
         
+        X_train = train_split[:, :-1]
+        y_train = train_split[:, -1]
         return X_train, y_train
 
 # Download and Test Dataset
@@ -96,9 +96,16 @@ if __name__ == "__main__":
     dataset = BiasedSPDDataset({})
     print("dataset.labeled_train_split: ", len(dataset.labeled_train_split), dataset.labeled_train_split[0])
     print("dataset.unlabeled_train_split: ", len(dataset.unlabeled_train_split), dataset.unlabeled_train_split[0])
+    
+    dataset.get_xy_split('labeled')
+    dataset.get_xy_split('unlabeled')
+    
     dataset.update(torch.tensor([0, 1, 2, 3]))
     print("dataset.labeled_train_split: ", len(dataset.labeled_train_split))
     print("dataset.unlabeled_train_split: ", len(dataset.unlabeled_train_split))
     dataset.update(torch.tensor([0, 1, 2, 3]))
     print("dataset.labeled_train_split: ", len(dataset.labeled_train_split))
     print("dataset.unlabeled_train_split: ", len(dataset.unlabeled_train_split))
+
+    dataset.get_xy_split('labeled')
+    dataset.get_xy_split('unlabeled')

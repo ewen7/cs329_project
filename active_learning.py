@@ -1,4 +1,5 @@
-
+import numpy as np
+import torch
 
 def run(model, dataset, args):
     """
@@ -14,5 +15,4 @@ def random(model, dataset, args):
     """
     Randomly select a batch of unlabeled data to label. Returns indices of the selected unlabeled data.
     """
-    # TODO
-    pass
+    return torch.from_numpy(np.random.choice(dataset.unlabeled_train_split.shape[0], size=args.al_proposal_size, replace=False))

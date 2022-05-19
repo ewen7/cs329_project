@@ -33,9 +33,9 @@ class SPDDataset(Dataset):
         self.dataset = np.array(self.dataset, dtype=float)
 
         train_size = int(len(self.dataset) *
-                         config.get('train_val_split', 0.8))
+                         config.train_val_split)
         old_val_size = len(self.dataset) - train_size
-        new_val_size = int(old_val_size * config.get('val_test_split', 0.5))
+        new_val_size = int(old_val_size * config.val_test_split)
         test_size = old_val_size - new_val_size
 
         train_dataset, val_test_dataset = torch.utils.data.random_split(
@@ -57,9 +57,9 @@ class SPDTrainDataset(SPDDataset):
         self.dataset = self.train_dataset
         self.dataset = self.redistribute_dataset(
             self.train_dataset,
-            config.get('feature_name', 'gender'),
-            config.get('feature_distribution', [0.5]*2),
-            config.get('equalize_dataset', True),
+            config.protected_feature,
+            config.feature_distribution,
+            config.equalize_dataset
         )
 
     def __getitem__(self, index):

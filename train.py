@@ -12,6 +12,8 @@ def train_spd(model, dataset, args, verbose=False):
     Trains the model on the dataset.
     """
     if args.model == 'lr':
-        model.fit(dataset.unlabeled_train_split[0], dataset.unlabeled_train_split[1])
+        X_train, y_train = dataset.get_xy_split('labeled')
+        print(f'Training Logistic Regression on {X_train.shape[0]} datapoints...')
+        model.fit(X_train, y_train)
     else:
         raise ValueError(f"Unknown model: {args.model}")

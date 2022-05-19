@@ -7,7 +7,7 @@ def init_model(args):
     """
     if args.dataset == 'spd':
         if args.model == 'lr':
-            return LogisticRegression(args.num_classes)
+            return LogisticRegression(max_iter=1000)
         else:
             raise ValueError(f"Unknown model: {args.model}")
     else:
