@@ -46,7 +46,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--protected-feature', type=str, default='Sex', help='protected feature to balance')
     parser.add_argument('--feature-to-predict', type=str, default='HeartDisease', help='feature to predict')
-    parser.add_argument('--feature-distribution', nargs='+', default=[0.5, 0.5], help='redistributed partition')
+    parser.add_argument('--feature-distribution', nargs='+', default=[], help='redistributed partition')
     parser.add_argument('--equalize-dataset', action='store_true', help='equalize dataset')
     parser.add_argument('--dataset-split', type=float, default=0.9, help='dataset split')
 
@@ -54,5 +54,16 @@ if __name__ == '__main__':
     parser.add_argument('--val-test-split', type=float, default=0.5, help='val/test split')
 
     args = parser.parse_args()
+
+    if len(args.feature_distribution) == 0:
+        # Set default feature distribution if none provided
+        if args.dataset == 'spd':
+            args.feature_distribution = [0.5, 0.5]
+        elif args.dataset == 'hdp':
+            args.feature_distribution = [0.5, 0.5]
+        elif args.dataset == 'mnist':
+            args.feature_distribution = [0.1]*10
+    else:
+        args.feature_distribution = [float(x) for x in args.feature_distribution]
 
     run(args)
