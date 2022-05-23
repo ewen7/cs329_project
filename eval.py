@@ -15,7 +15,6 @@ def eval(model, dataset, args, verbose=False):
     eval_fairness(model, dataset, args, verbose=True)
 
 
-# protected class: gender (male: 1, female: 0)
 def eval_accuracy(model, dataset, args, verbose=False):
     X_test, y_test = dataset.get_xy_split('test')
     y_hat = torch.from_numpy(model.predict(X_test))
