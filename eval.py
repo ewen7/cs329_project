@@ -10,7 +10,7 @@ def eval(model, dataset, args, verbose=False):
     """
     # compute accuracy / log to tensorboard?
 
-    print("eval (acc): ", eval_accuracy(model, dataset, args, verbose))
+    print(f"eval (acc): {eval_accuracy(model, dataset, args, verbose):.4f}")
     print("eval (fairness): ")
     eval_fairness(model, dataset, args, verbose=True)
 
@@ -20,11 +20,7 @@ def eval_accuracy(model, dataset, args, verbose=False):
     X_test, y_test = dataset.get_xy_split('test')
     y_hat = torch.from_numpy(model.predict(X_test))
     
-    X_protected = X_test[:, dataset.protected_feature]
-    accuracy_class0 = (torch.eq(y_hat, y_test) * (1.0 - X_protected)).sum() / (1.0 - X_protected).sum()
-    accuracy_class1 = (torch.eq(y_hat, y_test) * (X_protected)).sum() / X_protected.sum()
-
-    return accuracy_class0, accuracy_class1
+    return (y_hat == y_test).sum().item() / y_test.shape[0]
 
 
 def eval_fairness(model, dataset, args, verbose=True):
@@ -50,7 +46,7 @@ def eval_fairness(model, dataset, args, verbose=True):
         else: print("CLASS ", i)
         for metric in fairness_metrics:
             eval = fairness_eval.get_bias_result_from_metric(metric)
-            if verbose: print(metric, ": ", eval)
+            if verbose: print(f"{metric}: {eval:.4f}")
 
 def eval_robustness(model, dataset, args, verbose=False):
     """

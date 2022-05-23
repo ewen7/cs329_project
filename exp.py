@@ -57,6 +57,9 @@ if __name__ == '__main__':
     parser.add_argument('--val-test-split', type=float, default=0.5, help='val/test split')
     parser.add_argument('--verbose', action='store_true', help='Verbose Output dataset')
 
+    parser.add_argument('--epochs', type=int, default=10, help='number of epochs')
+    parser.add_argument('--batch_size', type=int, default=20, help='batch size')
+
     args = parser.parse_args()
 
     if len(args.feature_distribution) == 0:
