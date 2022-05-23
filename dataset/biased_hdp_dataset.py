@@ -31,6 +31,8 @@ class BiasedHDPDataset(Dataset):
             datasets.feature_to_loc,
             Namespace(dataset_split=1, protected_feature=args.feature_to_predict, feature_to_predict=args.feature_to_predict, feature_distribution= [0.5, 0.5], equalize_dataset=True)
         )   
+        self.feature_to_loc = datasets.feature_to_loc
+        self.args = args
 
         indexes = torch.randperm(self.balanced_train_dataset.shape[0])
         self.balanced_train_dataset = self.balanced_train_dataset[indexes]
@@ -98,6 +100,10 @@ class BiasedHDPDataset(Dataset):
         still_unlabeled = torch.ones(self.unlabeled_train_split.shape[0], dtype=bool)
         still_unlabeled[proposed_data_indices] = False
         self.unlabeled_train_split = self.unlabeled_train_split[still_unlabeled]
+        _, counts = np.unique(np.array(self.labeled_train_split[:, self.feature_to_loc[self.args.feature_to_predict]]), return_counts=True)
+        print("disease: ", counts)
+        _, counts = np.unique(np.array(self.labeled_train_split[:, self.feature_to_loc[self.args.protected_feature]]), return_counts=True)
+        print("gender: ", counts)
     
     def get_xy_split(self, split, verbose=False): # split should be 'labeled' or 'unlabeled' or 'test
         if split == 'labeled': to_split = self.labeled_train_split 
