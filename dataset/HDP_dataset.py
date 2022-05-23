@@ -25,10 +25,12 @@ class HDPDataset(Dataset):
         self.dataset = pd.read_csv(dataset_dir).dropna()
         self.feature_to_loc = {c: i for i,
                                c in enumerate(self.dataset.columns)}
-        self.dataset = self.dataset[self.dataset['gender'] != 'Other']
-        for header_str in ["gender", "Residence_type", "ever_married", "work_type", "smoking_status"]:
+        for header_str in ["HeartDisease", "Smoking", "AlcoholDrinking", "Stroke", "DiffWalking", "Sex", "AgeCategory", "Race", "Diabetic", "PhysicalActivity", "GenHealth", "Asthma", "KidneyDisease", "SkinCancer"]:
             self.dataset[header_str] = self.dataset[header_str].astype(
                 'category').cat.codes
+        self.feature_to_predict = self.dataset.columns.get_loc(config.feature_to_predict)
+        self.protected_feature = self.dataset.columns.get_loc(config.protected_feature)
+
         self.dataset = self.dataset.to_numpy()
         self.dataset = np.array(self.dataset, dtype=float)
 
