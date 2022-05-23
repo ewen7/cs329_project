@@ -1,13 +1,20 @@
 import argparse
-from dataset.HDP_dataset import HDPDataset
 from torch.utils.data import Dataset
 import numpy as np
 import copy
 import torch
 import os
+import sys
+
+sys.path.insert(0, "./")
+from dataset.HDP_dataset import HDPDataset
 
 dataset_dir = os.path.join(os.path.dirname(os.path.realpath(
     __file__)), 'HDP/heart_2020_cleaned.csv')
+
+class Namespace:
+    def __init__(self, **kwargs):
+        self.__dict__.update(kwargs)
 
 class BiasedHDPDataset(Dataset):
 
@@ -18,9 +25,20 @@ class BiasedHDPDataset(Dataset):
         # args.percent_labelled
         datasets = HDPDataset(dataset_dir=dataset_dir, config=args)
         self.train_dataset, self.val_dataset, self.test_dataset = datasets.train_dataset, datasets.val_dataset, datasets.test_dataset
-        
-        self.labeled_train_split, self.unlabeled_train_split = self.redistribute_dataset(
+
+        self.balanced_train_dataset, self.leftover_train_dataset = self.redistribute_dataset(
             self.train_dataset,
+            datasets.feature_to_loc,
+            Namespace(dataset_split=1, protected_feature=args.feature_to_predict, feature_to_predict=args.feature_to_predict, feature_distribution= [0.5, 0.5], equalize_dataset=True)
+        )   
+        self.feature_to_loc = datasets.feature_to_loc
+        self.args = args
+
+        indexes = torch.randperm(self.balanced_train_dataset.shape[0])
+        self.balanced_train_dataset = self.balanced_train_dataset[indexes]
+
+        self.labeled_train_split, self.unlabeled_train_split = self.redistribute_dataset(
+            self.balanced_train_dataset,
             datasets.feature_to_loc,
             args
         )
@@ -71,9 +89,6 @@ class BiasedHDPDataset(Dataset):
         
         labelled_datasets = torch.tensor(np.concatenate(labelled_datasets, axis=0))
         unlabelled_datasets = torch.tensor(np.concatenate(unlabelled_datasets, axis=0))
-        print("labeled vs unlabeled", labelled_datasets.shape, unlabelled_datasets.shape)
-
-        print("is this torch still 1", torch.sum(labelled_datasets), torch.sum(unlabelled_datasets))
         return labelled_datasets, unlabelled_datasets
 
     def update(self, proposed_data_indices):
@@ -85,19 +100,22 @@ class BiasedHDPDataset(Dataset):
         still_unlabeled = torch.ones(self.unlabeled_train_split.shape[0], dtype=bool)
         still_unlabeled[proposed_data_indices] = False
         self.unlabeled_train_split = self.unlabeled_train_split[still_unlabeled]
-
-        print("is this torch still", torch.sum(self.labeled_train_split), torch.sum(self.unlabeled_train_split))
+        _, counts = np.unique(np.array(self.labeled_train_split[:, self.feature_to_loc[self.args.feature_to_predict]]), return_counts=True)
+        print("disease: ", counts)
+        _, counts = np.unique(np.array(self.labeled_train_split[:, self.feature_to_loc[self.args.protected_feature]]), return_counts=True)
+        print("gender: ", counts)
     
-    def get_xy_split(self, split): # split should be 'labeled' or 'unlabeled' or 'test
+    def get_xy_split(self, split, verbose=False): # split should be 'labeled' or 'unlabeled' or 'test
         if split == 'labeled': to_split = self.labeled_train_split 
         elif split == 'unlabeled': to_split = self.unlabeled_train_split 
         elif split == 'test': to_split = self.test_dataset
         else: raise Exception("unknown split")
-        
-        print("train_split", split, to_split.shape, to_split[:, 0 : self.feature_to_predict].shape)
+        if verbose:
+            print("train_split", split, to_split.shape, to_split[:, 0 : self.feature_to_predict].shape)
         X = torch.cat((to_split[:, 0 : self.feature_to_predict], to_split[:, self.feature_to_predict + 1:]), axis=1)
         y = to_split[:, self.feature_to_predict]
-        print("balance", X.shape, y.shape)
+        if verbose:
+            print("balance", X.shape, y.shape)
         # breakpoint()
         return X, y
 
@@ -111,21 +129,26 @@ if __name__ == "__main__":
     parser.add_argument('--dataset-split', type=float, default=0.2, help='dataset split')
     parser.add_argument('--train-val-split', type=float, default=0.8, help='train/val split')
     parser.add_argument('--val-test-split', type=float, default=0.5, help='val/test split')
+    parser.add_argument('--verbose', action='store_false', help='Verbose Output dataset')
+
     args = parser.parse_args()
 
     dataset = BiasedHDPDataset(args)
-    print("dataset.labeled_train_split: ", len(dataset.labeled_train_split), dataset.labeled_train_split[0])
-    print("dataset.unlabeled_train_split: ", len(dataset.unlabeled_train_split), dataset.unlabeled_train_split[0])
+    if args.verbose:
+        print("dataset.labeled_train_split: ", len(dataset.labeled_train_split), dataset.labeled_train_split[0])
+        print("dataset.unlabeled_train_split: ", len(dataset.unlabeled_train_split), dataset.unlabeled_train_split[0])
     
     dataset.get_xy_split('labeled')
     dataset.get_xy_split('unlabeled')
     
     dataset.update(torch.tensor([0, 1, 2, 3]))
-    print("dataset.labeled_train_split: ", len(dataset.labeled_train_split))
-    print("dataset.unlabeled_train_split: ", len(dataset.unlabeled_train_split))
+    if args.verbose:
+        print("dataset.labeled_train_split: ", len(dataset.labeled_train_split))
+        print("dataset.unlabeled_train_split: ", len(dataset.unlabeled_train_split))
     dataset.update(torch.tensor([0, 1, 2, 3]))
-    print("dataset.labeled_train_split: ", len(dataset.labeled_train_split))
-    print("dataset.unlabeled_train_split: ", len(dataset.unlabeled_train_split))
+    if args.verbose:
+        print("dataset.labeled_train_split: ", len(dataset.labeled_train_split))
+        print("dataset.unlabeled_train_split: ", len(dataset.unlabeled_train_split))
 
-    dataset.get_xy_split('labeled')
-    dataset.get_xy_split('unlabeled')
+    x, y = dataset.get_xy_split('labeled')
+    x, y = dataset.get_xy_split('unlabeled')
