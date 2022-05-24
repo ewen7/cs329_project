@@ -11,6 +11,7 @@ import datetime
 import os
 import tensorflow as tf
 from tensorboard import summary
+from tqdm import tqdm
 
 class Logger(object):
     def __init__(self, log_dir):
@@ -71,6 +72,51 @@ def eval_accuracy(model, dataset, args, verbose=False):
     return (y_hat == y_test).sum().item() / y_test.shape[0]
 
 
+# def eval_fairness(model, dataset, args, verbose=True, save=True):
+#     """
+#     Computes predictive parity for the different protected classes specified in args.protected_classes
+#     """
+#     fairness_evals = []
+#     X_test, y_test = dataset.get_xy_split('test')
+#     y_hat = torch.from_numpy(model.predict(X_test))
+#     fairness_metrics = ['accuracy', 'selection_rate', 'true_positive_rate', 'false_positive_rate', 'true_negative_rate', 'false_negative_rate', 'treatment_equality_rate',
+#                         'equality_of_opportunity', 'average_odds', 'acceptance_rate', 'rejection_rate']
+
+#     X_protected = X_test[:, dataset.protected_feature]
+
+#     y_hat0 = y_hat * (1.0 - X_protected)
+#     y_test0 = y_test * (1.0 - X_protected)
+#     y_hat1 = y_hat * (X_protected)
+#     y_test1 = y_test * (X_protected)
+
+#     for i, (y_hat, y_test) in enumerate([(y_hat0, y_test0), (y_hat1, y_test1), (y_hat, y_test)]):
+#         if verbose:
+#             if i == 2: print("BOTH CLASSES")
+#             else: print("CLASS ", i)
+
+#         fairness_eval = BinaryClassificationBiasDataset(
+#             preds=y_hat, labels=y_test, positive_class_favored=False)
+#         evals = []
+#         for metric in fairness_metrics:
+#             eval = fairness_eval.get_bias_result_from_metric(metric)
+#             evals.append(eval)
+#             if verbose: print(f"{metric}: {eval:.4f}")
+#         if save:
+#             if i == 0: df = pd.DataFrame(evals, columns=[i], index=fairness_metrics)
+#             else: df = pd.concat([df, pd.DataFrame(evals, columns=[i], index=fairness_metrics)], axis=1)
+#         fairness_evals.append(evals)
+#     if save:
+#         df.T.to_excel('./results/eval_metrics.xlsx', sheet_name='sheet1', index=False)
+#     return fairness_evals, fairness_metrics
+
+def eval_explainability(model, dataset, args, verbose=False):
+    """
+    Computes robustness metrics  for the different protected classes specified in args.protected_classes
+    """
+    model_explainer = ModelExplainer(model, dataset, args)
+    model_explainer.explain_model()
+
+# https://towardsdatascience.com/comprehensive-guide-on-multiclass-classification-metrics-af94cfb83fbd
 def eval_fairness(model, dataset, args, verbose=True, save=True):
     """
     Computes predictive parity for the different protected classes specified in args.protected_classes
@@ -81,56 +127,21 @@ def eval_fairness(model, dataset, args, verbose=True, save=True):
     fairness_metrics = ['accuracy', 'selection_rate', 'true_positive_rate', 'false_positive_rate', 'true_negative_rate', 'false_negative_rate', 'treatment_equality_rate',
                         'equality_of_opportunity', 'average_odds', 'acceptance_rate', 'rejection_rate']
 
-    X_protected = X_test[:, dataset.protected_feature]
-
-    y_hat0 = y_hat * (1.0 - X_protected)
-    y_test0 = y_test * (1.0 - X_protected)
-    y_hat1 = y_hat * (X_protected)
-    y_test1 = y_test * (X_protected)
-
-    for i, (y_hat, y_test) in enumerate([(y_hat0, y_test0), (y_hat1, y_test1), (y_hat, y_test)]):
-        if verbose:
-            if i == 2: print("BOTH CLASSES")
-            else: print("CLASS ", i)
-
-        fairness_eval = BinaryClassificationBiasDataset(
-            preds=y_hat, labels=y_test, positive_class_favored=False)
-        evals = []
-        for metric in fairness_metrics:
-            eval = fairness_eval.get_bias_result_from_metric(metric)
-            evals.append(eval)
-            if verbose: print(f"{metric}: {eval:.4f}")
-        if save:
-            if i == 0: df = pd.DataFrame(evals, columns=[i], index=fairness_metrics)
-            else: df = pd.concat([df, pd.DataFrame(evals, columns=[i], index=fairness_metrics)], axis=1)
-        fairness_evals.append(evals)
-    if save:
-        df.T.to_excel('./results/eval_metrics.xlsx', sheet_name='sheet1', index=False)
-    return fairness_evals, fairness_metrics
-
-def eval_explainability(model, dataset, args, verbose=False):
-    """
-    Computes robustness metrics  for the different protected classes specified in args.protected_classes
-    """
-    model_explainer = ModelExplainer(model, dataset, args)
-    model_explainer.explain_model()
-
-def eval_fairness_mnist(model, dataset, args, verbose=True, save=True):
-    """
-    Computes predictive parity for the different protected classes specified in args.protected_classes
-    """
-    fairness_evals = []
-    X_test, y_test = dataset.get_xy_split('test')
-    y_hat = torch.from_numpy(model.predict(X_test))
-    fairness_metrics = ['accuracy', 'selection_rate', 'true_positive_rate', 'false_positive_rate', 'true_negative_rate', 'false_negative_rate', 'treatment_equality_rate',
-                        'equality_of_opportunity', 'average_odds', 'acceptance_rate', 'rejection_rate']
-
     y_hats, y_tests = [], []
-    for c in range(args.num_classes):
-        y_hats.append(y_hat == c)
-        y_tests.append(y_test == c) 
-
-    for c in range(args.num_classes):
+    if args.dataset == 'hdp':
+        num_classes = 2
+        X_protected = X_test[:, dataset.protected_feature]
+        y_hats = [y_hat * (1.0 - X_protected), y_hat * (X_protected)]
+        y_tests = [y_test * (1.0 - X_protected),  y_test * (X_protected)]
+    elif args.dataset == 'mnist':
+        num_classes = model.num_classes
+        for c in range(model.num_classes):
+            y_hats.append(y_hat == c)
+            y_tests.append(y_test == c) 
+    else:
+        raise Exception("Unknown Dataset")
+    
+    for c in range(num_classes):
         y_hat = y_hats[c]
         y_test = y_tests[c]
         if verbose:
@@ -144,9 +155,10 @@ def eval_fairness_mnist(model, dataset, args, verbose=True, save=True):
             evals.append(eval)
             if verbose: print(f"{metric}: {eval:.4f}")
         if save:
-            if i == 0: df = pd.DataFrame(evals, columns=[i], index=fairness_metrics)
-            else: df = pd.concat([df, pd.DataFrame(evals, columns=[i], index=fairness_metrics)], axis=1)
+            if c == 0: df = pd.DataFrame(evals, columns=[c], index=fairness_metrics)
+            else: df = pd.concat([df, pd.DataFrame(evals, columns=[c], index=fairness_metrics)], axis=1)
         fairness_evals.append(evals)
+    print("Eval Fairness Complete")
     if save:
         df.T.to_excel('./results/multi_eval_metrics.xlsx', sheet_name='sheet1', index=False)
     return fairness_evals, fairness_metrics
