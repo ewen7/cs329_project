@@ -41,7 +41,6 @@ def eval(model, dataset, step, args, verbose=False):
     """
     Runs evaluation on the test dataset.
     """
-<<<<<<< HEAD
     # compute accuracy / log to tensorboard?
     # print(f"eval (acc): {eval_accuracy(model, dataset, args, verbose):.4f}")
     # acc_c0, acc_c1 = eval_accuracy(model, dataset, args, verbose)
@@ -58,21 +57,6 @@ def eval(model, dataset, step, args, verbose=False):
 
         print("eval (Explainability): ")
         eval_explainability(model, dataset, args, verbose=True)
-=======
-
-    print(f"eval (acc): {eval_accuracy(model, dataset, args, verbose):.4f}")
-    if args.dataset == 'hdp' or args.dataset == 'spd':
-        # print("eval (fairness): ")
-        # compute accuracy / log to tensorboard?
-        # print(f"eval (acc): {eval_accuracy(model, dataset, args, verbose):.4f}")
-        # acc_c0, acc_c1 = eval_accuracy(model, dataset, args, verbose)
-        fairness_evals, fairness_metrics = eval_fairness(model, dataset, args, verbose=True)
-        # with summary_writer.as_default(step=10):
-        for i, metric in enumerate(fairness_metrics):
-            for j in range(3):
-                summary_writer.scalar_summary(metric + '_c' + str(j), fairness_evals[j][i], step)
-            summary_writer.scalar_summary(metric + '_c01_diff' + str(), fairness_evals[0][i] - fairness_evals[1][i], step)
->>>>>>> ce504cdb17b67bef1c429966af5cca8299c126a7
 
 
 def eval_accuracy(model, dataset, args, verbose=False):
