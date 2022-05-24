@@ -49,6 +49,7 @@ def train_mnist(model, dataset, args, verbose=True):
         print(f'Training Logistic Regression on {X_train.shape[0]} datapoints...')
         model.fit(X_train, y_train)
     elif args.model == 'cnn':
+        model.training = True
         X_train, y_train = dataset.get_xy_split('labeled')
         print(f'Training CNN on {X_train.shape[0]} datapoints...')
         optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum)
@@ -62,3 +63,4 @@ def train_mnist(model, dataset, args, verbose=True):
                 loss = F.nll_loss(output, target)
                 loss.backward()
                 optimizer.step()
+        model.training = False

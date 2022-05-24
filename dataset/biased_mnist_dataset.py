@@ -58,7 +58,10 @@ class BiasedMNISTDataset(Dataset):
         self.model = args.model
 
     def __getitem__(self, index):
-        return self.labeled_train_split[index]
+        return self.labeled_X_train[index], self.labeled_Y_train[index]
+    
+    def __len__(self):
+        return self.labeled_X_train.size()[0]
     
     def update(self, proposed_data_indices):
         new_X_labeled = torch.index_select(self.unlabeled_X_train, 0, proposed_data_indices)

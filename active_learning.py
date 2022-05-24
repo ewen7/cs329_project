@@ -1,6 +1,7 @@
 import numpy as np
 import torch
 import torch.distributions as td
+from tqdm import tqdm
 
 def run(model, dataset, args):
     """
@@ -8,8 +9,10 @@ def run(model, dataset, args):
     """
     if args.al_method == 'random':
         return al_random(model, dataset, args)
-    elif args.al_method == 'hdp':
-        return al_hdp(model, dataset, args)
+    elif args.al_method == 'entropy':
+        return al_entropy(model, dataset, args)
+    elif args.al_method == 'cnn_distance':
+        return al_cnn_distance(model, dataset, args)
     else:
         raise ValueError(f"Unknown active learning method: {args.al_method}")
 
@@ -19,11 +22,29 @@ def al_random(model, dataset, args):
     """
     return torch.from_numpy(np.random.choice(dataset.unlabeled_train_split.shape[0], size=args.al_proposal_size, replace=False))
 
-def al_hdp(model, dataset, args):
+def al_entropy(model, dataset, args):
     """
-    Active learning for HPD. Returns indices of the selected unlabeled data.
+    Active learning with entropy for HPD and MNIST. Returns indices of the selected unlabeled data.
     """
-    poolX, poolY = dataset.get_xy_split('unlabeled')
-    y_pred = torch.from_numpy(model.predict_proba(poolX))
-    entropies = td.Categorical(logits=y_pred).entropy()
+    poolX, _ = dataset.get_xy_split('unlabeled')
+    y_probs = torch.from_numpy(model.predict_proba(poolX))
+    entropies = td.Categorical(probs=y_probs).entropy()
     return torch.argsort(entropies, descending=True)[:args.al_proposal_size]
+
+def al_cnn_distance(model, dataset, args):
+    """
+    Active learning with distance for a CNN model on MNIST.
+    """
+    poolX, _ = dataset.get_xy_split('unlabeled')
+    labeledX, _ = dataset.get_xy_split('labeled')
+    pool_embeds = model.forward(poolX, return_embedding=True)
+    labeled_embeds = model.forward(labeledX, return_embedding=True)
+    # compute the average Euclidean distance from each unlabeled point to all the labeled points
+    # vectorized (TOO SLOW, DON'T RUN):
+    # # distances = (((pool_embeds.unsqueeze(1) - labeled_embeds.unsqueeze(0))**2).sum(dim=2)**0.5).sum(dim=1)
+    print('Computing distances...')
+    distances = np.zeros(pool_embeds.shape[0])
+    for i in tqdm(range(pool_embeds.shape[0])):
+        distances[i] = (((pool_embeds[i].unsqueeze(0) - labeled_embeds)**2).sum(dim=1)**0.5).mean().item()
+    distances = torch.from_numpy(distances)
+    return torch.argsort(distances, descending=True)[:args.al_proposal_size]

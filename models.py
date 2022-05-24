@@ -38,11 +38,12 @@ class CNN(nn.Module):
         self.fc1 = nn.Linear(320, 50)
         self.fc2 = nn.Linear(50, 10)
 
-    def forward(self, x):
+    def forward(self, x, return_embedding=False):
         x = F.relu(F.max_pool2d(self.conv1(x), 2))
         x = F.relu(F.max_pool2d(self.conv2_drop(self.conv2(x)), 2))
         x = x.view(-1, 320)
         x = F.relu(self.fc1(x))
+        if return_embedding: return x
         x = F.dropout(x, training=self.training)
         x = self.fc2(x)
         return F.log_softmax(x)
@@ -50,3 +51,7 @@ class CNN(nn.Module):
     def predict(self, x):
         y_hat = self.forward(x)
         return y_hat.argmax(dim=1).numpy()
+    
+    def predict_proba(self, x):
+        y_hat = self.forward(x)
+        return y_hat.numpy()
