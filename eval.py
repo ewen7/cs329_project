@@ -53,57 +53,22 @@ def eval(model, dataset, step, args, verbose=False):
         num_classes = 10 if args.dataset == 'mnist' else 3
         for j in range(num_classes):
             args.summary_writer.scalar_summary(metric + '_c' + str(j), fairness_evals[j][i], step)
-        args.summary_writer.scalar_summary(metric + '_c01_diff', abs(fairness_evals[0][i] - fairness_evals[1][i]), step)
+        if args.dataset == 'hdp':
+            args.summary_writer.scalar_summary(metric + '_c01_diff', abs(fairness_evals[0][i] - fairness_evals[1][i]), step)
+        agg = []
+        for j in range(len(fairness_evals)):
+            agg.append(fairness_evals[j][i])
+        args.summary_writer.scalar_summary(metric + '_agg', np.mean(agg), step)
 
     print("eval (Explainability): ")
     if args.dataset == 'hdp' or args.dataset == 'spd':
         eval_explainability(model, dataset, args, verbose)
-
-
 
 def eval_accuracy(model, dataset, args, verbose=False):
     X_test, y_test = dataset.get_xy_split('test')
     y_hat = torch.from_numpy(model.predict(X_test))
     
     return (y_hat == y_test).sum().item() / y_test.shape[0]
-
-
-# def eval_fairness(model, dataset, args, verbose=True, save=True):
-#     """
-#     Computes predictive parity for the different protected classes specified in args.protected_classes
-#     """
-#     fairness_evals = []
-#     X_test, y_test = dataset.get_xy_split('test')
-#     y_hat = torch.from_numpy(model.predict(X_test))
-#     fairness_metrics = ['accuracy', 'selection_rate', 'true_positive_rate', 'false_positive_rate', 'true_negative_rate', 'false_negative_rate', 'treatment_equality_rate',
-#                         'equality_of_opportunity', 'average_odds', 'acceptance_rate', 'rejection_rate']
-
-#     X_protected = X_test[:, dataset.protected_feature]
-
-#     y_hat0 = y_hat * (1.0 - X_protected)
-#     y_test0 = y_test * (1.0 - X_protected)
-#     y_hat1 = y_hat * (X_protected)
-#     y_test1 = y_test * (X_protected)
-
-#     for i, (y_hat, y_test) in enumerate([(y_hat0, y_test0), (y_hat1, y_test1), (y_hat, y_test)]):
-#         if verbose:
-#             if i == 2: print("BOTH CLASSES")
-#             else: print("CLASS ", i)
-
-#         fairness_eval = BinaryClassificationBiasDataset(
-#             preds=y_hat, labels=y_test, positive_class_favored=False)
-#         evals = []
-#         for metric in fairness_metrics:
-#             eval = fairness_eval.get_bias_result_from_metric(metric)
-#             evals.append(eval)
-#             if verbose: print(f"{metric}: {eval:.4f}")
-#         if save:
-#             if i == 0: df = pd.DataFrame(evals, columns=[i], index=fairness_metrics)
-#             else: df = pd.concat([df, pd.DataFrame(evals, columns=[i], index=fairness_metrics)], axis=1)
-#         fairness_evals.append(evals)
-#     if save:
-#         df.T.to_excel('./results/eval_metrics.xlsx', sheet_name='sheet1', index=False)
-#     return fairness_evals, fairness_metrics
 
 def eval_explainability(model, dataset, args, verbose=False):
     """
