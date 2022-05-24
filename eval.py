@@ -11,8 +11,9 @@ def eval(model, dataset, args, verbose=False):
     # compute accuracy / log to tensorboard?
 
     print(f"eval (acc): {eval_accuracy(model, dataset, args, verbose):.4f}")
-    print("eval (fairness): ")
-    eval_fairness(model, dataset, args, verbose=True)
+    if args.dataset == 'hdp' or args.dataset == 'spd':
+        print("eval (fairness): ")
+        eval_fairness(model, dataset, args, verbose=True)
 
 
 def eval_accuracy(model, dataset, args, verbose=False):

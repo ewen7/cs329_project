@@ -47,32 +47,49 @@ class BiasedMNISTDataset(Dataset):
         self.unlabeled_X_train = torch.cat(self.unlabeled_X_train, dim=0)
         self.unlabeled_Y_train = torch.cat(self.unlabeled_Y_train, dim=0)
 
+        self.unlabeled_train_split = self.unlabeled_X_train
+
         # randomly shuffle indices of labeled data
         shuffled_indices = torch.randperm(self.labeled_X_train.size()[0])
         self.labeled_X_train = self.labeled_X_train[shuffled_indices]
         self.labeled_Y_train = self.labeled_Y_train[shuffled_indices]
 
+        # if using logistic regression, reshape to (B, 784) instead of (B, 1, 28, 28)
+        self.model = args.model
+
     def __getitem__(self, index):
         return self.labeled_train_split[index]
     
     def update(self, proposed_data_indices):
-        new_data_points = torch.index_select(self.unlabeled_train_split, 0, proposed_data_indices)
+        new_X_labeled = torch.index_select(self.unlabeled_X_train, 0, proposed_data_indices)
+        new_Y_labeled = torch.index_select(self.unlabeled_Y_train, 0, proposed_data_indices)
         
-        self.labeled_train_split = torch.tensor(np.concatenate([self.labeled_train_split, new_data_points], axis=0))
-        self.labeled_train_split = self.labeled_train_split[torch.randperm(self.labeled_train_split.size()[0])]
+        self.labeled_X_train = torch.cat((self.labeled_X_train, new_X_labeled), dim=0)
+        self.labeled_Y_train = torch.cat((self.labeled_Y_train, new_Y_labeled), dim=0)
         
         still_unlabeled = torch.ones(self.unlabeled_train_split.shape[0], dtype=bool)
         still_unlabeled[proposed_data_indices] = False
         self.unlabeled_train_split = self.unlabeled_train_split[still_unlabeled]
+        self.unlabeled_X_train = self.unlabeled_X_train[still_unlabeled]
+        self.unlabeled_Y_train = self.unlabeled_Y_train[still_unlabeled]
 
     def get_xy_split(self, split): # split: 'labeled', 'unlabeled', 'test'
+        X, y = None, None
         if split == 'labeled':
-            return self.labeled_X_train, self.labeled_Y_train
+            X, y = self.labeled_X_train, self.labeled_Y_train
         elif split == 'unlabeled':
-            return self.unlabeled_X_train, self.unlabeled_Y_train
+            X, y = self.unlabeled_X_train, self.unlabeled_Y_train
         elif split == 'test':
-            return self.all_X_test, self.all_Y_test
+            X, y = self.all_X_test, self.all_Y_test
         else: raise Exception("unknown split")
+
+        if self.model == 'lr':
+            X = X.reshape(-1, 784)
+        elif self.model == 'cnn':
+            X = X.reshape(-1, 1, 28, 28)
+        else: raise Exception("unknown model")
+
+        return X, y
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
