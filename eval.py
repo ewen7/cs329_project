@@ -1,3 +1,4 @@
+from statistics import mode
 import numpy as np
 from regex import E
 import torch
@@ -43,17 +44,19 @@ def eval(model, dataset, step, args, verbose=False):
     # compute accuracy / log to tensorboard?
     # print(f"eval (acc): {eval_accuracy(model, dataset, args, verbose):.4f}")
     # acc_c0, acc_c1 = eval_accuracy(model, dataset, args, verbose)
-    fairness_evals, fairness_metrics = eval_fairness(model, dataset, args, verbose=True)
     # with summary_writer.as_default(step=10):
-    for i, metric in enumerate(fairness_metrics):
-        for j in range(3):
-            summary_writer.scalar_summary(metric + '_c' + str(j), fairness_evals[j][i], step)
-        summary_writer.scalar_summary(metric + '_c01_diff' + str(), fairness_evals[0][i] - fairness_evals[1][i], step)
 
     print(f"eval (acc): {eval_accuracy(model, dataset, args, verbose):.4f}")
     if args.dataset == 'hdp' or args.dataset == 'spd':
         print("eval (fairness): ")
-        eval_fairness(model, dataset, args, verbose=True)
+        fairness_evals, fairness_metrics = eval_fairness(model, dataset, args, verbose=True)
+        for i, metric in enumerate(fairness_metrics):
+            for j in range(3):
+                summary_writer.scalar_summary(metric + '_c' + str(j), fairness_evals[j][i], step)
+            summary_writer.scalar_summary(metric + '_c01_diff', abs(fairness_evals[0][i] - fairness_evals[1][i]), step)
+
+        print("eval (Explainability): ")
+        eval_explainability(model, dataset, args, verbose=True)
 
 
 def eval_accuracy(model, dataset, args, verbose=False):
@@ -70,7 +73,7 @@ def eval_fairness(model, dataset, args, verbose=True, save=True):
     fairness_evals = []
     X_test, y_test = dataset.get_xy_split('test')
     y_hat = torch.from_numpy(model.predict(X_test))
-    fairness_metrics = ['selection_rate', 'true_positive_rate', 'false_positive_rate', 'true_negative_rate', 'false_negative_rate', 'treatment_equality_rate',
+    fairness_metrics = ['accuracy', 'selection_rate', 'true_positive_rate', 'false_positive_rate', 'true_negative_rate', 'false_negative_rate', 'treatment_equality_rate',
                         'equality_of_opportunity', 'average_odds', 'acceptance_rate', 'rejection_rate']
 
     X_protected = X_test[:, dataset.protected_feature]
