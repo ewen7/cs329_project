@@ -36,9 +36,6 @@ class Logger(object):
         #summary = tf.Summary(value=[tf.Summary.Value(tag=tag, simple_value=value) for tag, value in tag_value_pairs])
         #self.writer.add_summary(summary, step)
 
-log_dir = os.path.join("logs", datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
-summary_writer =  Logger(log_dir)
-
 def eval(model, dataset, step, args, verbose=False):
     """
     Runs evaluation on the test dataset.

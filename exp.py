@@ -7,6 +7,9 @@ from train import train_model
 from eval import eval
 from models import init_model
 from dataset import BiasedHDPDataset, BiasedSPDDataset, BiasedMNISTDataset
+import os
+from eval import Logger
+import datetime
 
 
 def run(args):
@@ -76,5 +79,8 @@ if __name__ == '__main__':
             args.feature_distribution = [0.1] * 10
     else:
         args.feature_distribution = [float(x) for x in args.feature_distribution]
+
+    log_dir = os.path.join("logs", datetime.datetime.now().strftime("%Y%m%d-%H%M%S")+"-"+args.dataset+"-"+args.model+"-"+args.al_method)
+    args.summary_writer = Logger(log_dir)
 
     run(args)
