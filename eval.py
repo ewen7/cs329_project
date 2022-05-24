@@ -50,9 +50,10 @@ def eval(model, dataset, step, args, verbose=False):
             summary_writer.scalar_summary(metric + '_c' + str(j), fairness_evals[j][i], step)
         # summary_writer.merge(metric + '_c') 
 
-    print("eval (fairness): ")
-    print("eval (explainer): ")
-    eval_explainability(model, dataset, args, verbose=True)
+    print(f"eval (acc): {eval_accuracy(model, dataset, args, verbose):.4f}")
+    if args.dataset == 'hdp' or args.dataset == 'spd':
+        print("eval (fairness): ")
+        eval_fairness(model, dataset, args, verbose=True)
 
 
 def eval_accuracy(model, dataset, args, verbose=False):

@@ -41,7 +41,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset', type=str, default='hdp', help='dataset name')
     parser.add_argument('--model', type=str, default='lr', help='model name')
-    parser.add_argument('--num_classes', type=int, default=2, help='number of classes')
+
     parser.add_argument('--al-iters', type=int, default=14, help='number of loops of active learning')
     parser.add_argument('--al-method', type=str, default='random', help='active learning method')
     parser.add_argument('--al-proposal-size', type=int, default=1000, help='number of unlabeled data to propose')
@@ -50,15 +50,19 @@ if __name__ == '__main__':
     parser.add_argument('--feature-to-predict', type=str, default='HeartDisease', help='feature to predict')
     parser.add_argument('--feature-distribution', nargs='+', default=[], help='redistributed partition')
 
-    parser.add_argument('--equalize-dataset', action='store_true', help='equalize dataset')
     parser.add_argument('--dataset-split', type=float, default=0.1, help='dataset split')
-
-    parser.add_argument('--train-val-split', type=float, default=0.8, help='train/val split')
-    parser.add_argument('--val-test-split', type=float, default=0.5, help='val/test split')
     parser.add_argument('--verbose', action='store_true', help='Verbose Output dataset')
 
+    # hdp params
+    parser.add_argument('--train-val-split', type=float, default=0.8, help='train/val split')
+    parser.add_argument('--val-test-split', type=float, default=0.5, help='val/test split')
+    parser.add_argument('--equalize-dataset', action='store_true', help='equalize dataset')
+
+    # mnist cnn training params
     parser.add_argument('--epochs', type=int, default=10, help='number of epochs')
     parser.add_argument('--batch_size', type=int, default=20, help='batch size')
+    parser.add_argument('--lr', type=float, default=0.01, help='learning rate')
+    parser.add_argument('--momentum', type=float, default=0.5, help='momentum')
 
     args = parser.parse_args()
 

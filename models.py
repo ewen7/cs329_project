@@ -21,14 +21,13 @@ def init_model(args):
             raise ValueError(f"Unknown model: {args.model}")
     elif args.dataset == 'mnist':
         if args.model == 'cnn':
-            return CNN(args)
+            return CNN()
         elif args.model == 'lr':
-            return LogisticRegression(max_iter=1000)
+            return LogisticRegression(C=0.005, solver='saga', tol=0.1, penalty='l1')
         else:
             raise ValueError(f"Unknown model: {args.model}")
     else:
         raise ValueError(f"Unknown dataset: {args.dataset}")
-
 
 class CNN(nn.Module):
     def __init__(self):
@@ -47,3 +46,7 @@ class CNN(nn.Module):
         x = F.dropout(x, training=self.training)
         x = self.fc2(x)
         return F.log_softmax(x)
+    
+    def predict(self, x):
+        y_hat = self.forward(x)
+        return y_hat.argmax(dim=1).numpy()

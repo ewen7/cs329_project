@@ -13,7 +13,6 @@ def run(model, dataset, args):
     else:
         raise ValueError(f"Unknown active learning method: {args.al_method}")
 
-
 def al_random(model, dataset, args):
     """
     Randomly select a batch of unlabeled data to label. Returns indices of the selected unlabeled data.
@@ -24,8 +23,7 @@ def al_hdp(model, dataset, args):
     """
     Active learning for HPD. Returns indices of the selected unlabeled data.
     """
-    pool = dataset.unlabeled_train_split
-    y_pred = torch.from_numpy(model.predict(pool.X))
+    poolX, poolY = dataset.get_xy_split('unlabeled')
+    y_pred = torch.from_numpy(model.predict_proba(poolX))
     entropies = td.Categorical(logits=y_pred).entropy()
-    print("entropies", entropies)
-    return torch.from_numpy(np.argsort(entropies)[-args.al_proposal_size:])
+    return torch.argsort(entropies, descending=True)[:args.al_proposal_size]
