@@ -45,6 +45,7 @@ if __name__ == '__main__':
     parser.add_argument('--al-iters', type=int, default=100, help='number of loops of active learning')
     parser.add_argument('--al-method', type=str, default='random', help='active learning method')
     parser.add_argument('--al-proposal-size', type=int, default=100, help='number of unlabeled data to propose')
+    parser.add_argument('--kappa', type=float, default=0.5, help='kappa')
 
     parser.add_argument('--protected-feature', type=str, default='Sex', help='protected feature to balance')
     parser.add_argument('--feature-to-predict', type=str, default='HeartDisease', help='feature to predict')
