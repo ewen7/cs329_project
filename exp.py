@@ -7,6 +7,9 @@ from train import train_model
 from eval import eval
 from models import init_model
 from dataset import BiasedHDPDataset, BiasedSPDDataset, BiasedMNISTDataset
+import os
+from eval import Logger
+import datetime
 
 
 def run(args):
@@ -45,7 +48,6 @@ if __name__ == '__main__':
     parser.add_argument('--al-iters', type=int, default=100, help='number of loops of active learning')
     parser.add_argument('--al-method', type=str, default='random', help='active learning method')
     parser.add_argument('--al-proposal-size', type=int, default=100, help='number of unlabeled data to propose')
-    parser.add_argument('--kappa', type=float, default=0.5, help='kappa')
 
     parser.add_argument('--protected-feature', type=str, default='Sex', help='protected feature to balance')
     parser.add_argument('--feature-to-predict', type=str, default='HeartDisease', help='feature to predict')
@@ -77,5 +79,8 @@ if __name__ == '__main__':
             args.feature_distribution = [0.1] * 10
     else:
         args.feature_distribution = [float(x) for x in args.feature_distribution]
+
+    log_dir = os.path.join("logs", datetime.datetime.now().strftime("%Y%m%d-%H%M%S")+"-"+args.dataset+"-"+args.model+"-"+args.al_method)
+    args.summary_writer = Logger(log_dir)
 
     run(args)
