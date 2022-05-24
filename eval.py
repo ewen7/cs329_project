@@ -1,3 +1,4 @@
+import argparse
 from statistics import mode
 import numpy as np
 from regex import E
@@ -110,4 +111,39 @@ def eval_explainability(model, dataset, args, verbose=False):
     model_explainer = ModelExplainer(model, dataset, args)
     model_explainer.explain_model()
 
+def eval_fairness_mnist(model, dataset, args, verbose=True, save=True):
+    """
+    Computes predictive parity for the different protected classes specified in args.protected_classes
+    """
+    fairness_evals = []
+    X_test, y_test = dataset.get_xy_split('test')
+    y_hat = torch.from_numpy(model.predict(X_test))
+    fairness_metrics = ['accuracy', 'selection_rate', 'true_positive_rate', 'false_positive_rate', 'true_negative_rate', 'false_negative_rate', 'treatment_equality_rate',
+                        'equality_of_opportunity', 'average_odds', 'acceptance_rate', 'rejection_rate']
+
+    y_hats, y_tests = [], []
+    for c in range(args.num_classes):
+        y_hats.append(y_hat == c)
+        y_tests.append(y_test == c) 
+
+    for c in range(args.num_classes):
+        y_hat = y_hats[c]
+        y_test = y_tests[c]
+        if verbose:
+            print("CLASS ", c)
+
+        fairness_eval = BinaryClassificationBiasDataset(
+            preds=y_hat, labels=y_test, positive_class_favored=False)
+        evals = []
+        for metric in fairness_metrics:
+            eval = fairness_eval.get_bias_result_from_metric(metric)
+            evals.append(eval)
+            if verbose: print(f"{metric}: {eval:.4f}")
+        if save:
+            if i == 0: df = pd.DataFrame(evals, columns=[i], index=fairness_metrics)
+            else: df = pd.concat([df, pd.DataFrame(evals, columns=[i], index=fairness_metrics)], axis=1)
+        fairness_evals.append(evals)
+    if save:
+        df.T.to_excel('./results/multi_eval_metrics.xlsx', sheet_name='sheet1', index=False)
+    return fairness_evals, fairness_metrics
 
