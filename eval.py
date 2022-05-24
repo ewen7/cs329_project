@@ -52,8 +52,8 @@ def eval(model, dataset, step, args, verbose=False):
     for i, metric in enumerate(fairness_metrics):
         num_classes = 10 if args.dataset == 'mnist' else 3
         for j in range(num_classes):
-            summary_writer.scalar_summary(metric + '_c' + str(j), fairness_evals[j][i], step)
-        summary_writer.scalar_summary(metric + '_c01_diff', abs(fairness_evals[0][i] - fairness_evals[1][i]), step)
+            args.summary_writer.scalar_summary(metric + '_c' + str(j), fairness_evals[j][i], step)
+        args.summary_writer.scalar_summary(metric + '_c01_diff', abs(fairness_evals[0][i] - fairness_evals[1][i]), step)
 
     print("eval (Explainability): ")
     if args.dataset == 'hdp' or args.dataset == 'spd':
