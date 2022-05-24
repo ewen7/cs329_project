@@ -53,7 +53,7 @@ def eval(model, dataset, step, args, verbose=False):
     print("eval (fairness): ")
     fairness_evals, fairness_metrics = eval_fairness(model, dataset, args, verbose=True)
     for i, metric in enumerate(fairness_metrics):
-        num_classes = model.num_classes if args.dataset == 'mnist' else 3
+        num_classes = 10 if args.dataset == 'mnist' else 3
         for j in range(num_classes):
             summary_writer.scalar_summary(metric + '_c' + str(j), fairness_evals[j][i], step)
         summary_writer.scalar_summary(metric + '_c01_diff', abs(fairness_evals[0][i] - fairness_evals[1][i]), step)
@@ -133,8 +133,8 @@ def eval_fairness(model, dataset, args, verbose=True, save=True):
         y_hats = [y_hat * (1.0 - X_protected), y_hat * (X_protected), y_hat]
         y_tests = [y_test * (1.0 - X_protected),  y_test * (X_protected), y_test]
     elif args.dataset == 'mnist':
-        num_classes = model.num_classes
-        for c in range(model.num_classes):
+        num_classes = 10
+        for c in range(num_classes):
             y_hats.append(y_hat == c)
             y_tests.append(y_test == c) 
     else:
