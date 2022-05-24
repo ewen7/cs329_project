@@ -51,7 +51,10 @@ class BinaryClassificationBiasDataset(object):
         Ratio of the number of positive predictions to the total number of predictions
         """
         return np.sum(self.preds) / len(self.preds)
-
+    
+    def accuracy(self):
+        return np.sum(self.preds == self.preds)
+        
     def selection_rate(self):
         """
         Equal to selection_rate_positive if positive class is favored, 1 - selection_rate_positive otherwise
