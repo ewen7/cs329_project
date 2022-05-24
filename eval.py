@@ -48,7 +48,7 @@ def eval(model, dataset, step, args, verbose=False):
     for i, metric in enumerate(fairness_metrics):
         for j in range(3):
             summary_writer.scalar_summary(metric + '_c' + str(j), fairness_evals[j][i], step)
-        # summary_writer.merge(metric + '_c') 
+        summary_writer.scalar_summary(metric + '_c01_diff' + str(), fairness_evals[0][i] - fairness_evals[1][i], step)
 
     print(f"eval (acc): {eval_accuracy(model, dataset, args, verbose):.4f}")
     if args.dataset == 'hdp' or args.dataset == 'spd':
