@@ -49,20 +49,19 @@ def eval(model, dataset, step, args, verbose=False):
     # with summary_writer.as_default(step=10):
 
     print(f"eval (acc): {eval_accuracy(model, dataset, args, verbose):.4f}")
-    if args.dataset == 'hdp' or args.dataset == 'spd':
-        print("eval (fairness): ")
-        fairness_evals, fairness_metrics = eval_fairness(model, dataset, args, verbose=True)
-        for i, metric in enumerate(fairness_metrics):
-            for j in range(3):
-                summary_writer.scalar_summary(metric + '_c' + str(j), fairness_evals[j][i], step)
-            summary_writer.scalar_summary(metric + '_c01_diff', abs(fairness_evals[0][i] - fairness_evals[1][i]), step)
+    
+    print("eval (fairness): ")
+    fairness_evals, fairness_metrics = eval_fairness(model, dataset, args, verbose=True)
+    for i, metric in enumerate(fairness_metrics):
+        num_classes = model.num_classes if args.dataset == 'mnist' else 3
+        for j in range(num_classes):
+            summary_writer.scalar_summary(metric + '_c' + str(j), fairness_evals[j][i], step)
+        summary_writer.scalar_summary(metric + '_c01_diff', abs(fairness_evals[0][i] - fairness_evals[1][i]), step)
 
-        print("eval (Explainability): ")
+    print("eval (Explainability): ")
+    if args.dataset == 'hdp' or args.dataset == 'spd':
         eval_explainability(model, dataset, args, verbose=True)
-    if args.dataset == 'mnist':
-        pass
-        # print("eval (fairness): ")
-        # eval_fairness_mnist(model, dataset, args, verbose=True)
+
 
 
 def eval_accuracy(model, dataset, args, verbose=False):
@@ -129,10 +128,10 @@ def eval_fairness(model, dataset, args, verbose=True, save=True):
 
     y_hats, y_tests = [], []
     if args.dataset == 'hdp':
-        num_classes = 2
+        num_classes = 3
         X_protected = X_test[:, dataset.protected_feature]
-        y_hats = [y_hat * (1.0 - X_protected), y_hat * (X_protected)]
-        y_tests = [y_test * (1.0 - X_protected),  y_test * (X_protected)]
+        y_hats = [y_hat * (1.0 - X_protected), y_hat * (X_protected), y_hat]
+        y_tests = [y_test * (1.0 - X_protected),  y_test * (X_protected), y_test]
     elif args.dataset == 'mnist':
         num_classes = model.num_classes
         for c in range(model.num_classes):

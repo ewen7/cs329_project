@@ -2,6 +2,7 @@ import numpy as np
 import torch
 import torch.distributions as td
 from tqdm import tqdm
+from builtins import breakpoint
 
 def run(model, dataset, args):
     """
@@ -20,16 +21,16 @@ def al_random(model, dataset, args):
     """
     Randomly select a batch of unlabeled data to label. Returns indices of the selected unlabeled data.
     """
-    weights = torch.ones(dataset.unlabeled_train_split.shape[0])
+    weights = np.ones(dataset.unlabeled_train_split.shape[0])
     if args.dataset == 'hdp':
-        unlabeled_pc = dataset.unlabeled_train_split[dataset.protected_feature]
-        labeled_pc = dataset.labeled_train_split[dataset.protected_feature]
-        p_pc = unlabeled_pc.mean()
-        weights[unlabeled_pc == 0] = p_pc / (1 - unlabeled_pc[unlabeled_pc == 0]).sum()
-        weights[unlabeled_pc == 1] = (1 - p_pc) / (unlabeled_pc[unlabeled_pc == 1]).sum()
-        # m, n
-        # a, b
-        # m*a/m(a+b), n*b/n(a+b)
+        unlabeled_pc = dataset.unlabeled_train_split[:, dataset.protected_feature]
+        labeled_pc = dataset.labeled_train_split[:, dataset.protected_feature]
+        p_pc = labeled_pc.mean()
+        weights[unlabeled_pc == 0] = (1 - p_pc) / (1 - unlabeled_pc[unlabeled_pc == 0]).sum()
+        weights[unlabeled_pc == 1] = p_pc / (unlabeled_pc[unlabeled_pc == 1]).sum()
+        # m, n unlabeled
+        # a, b labeled
+        # a/m(a+b), b/n(a+b) weights for unlabeled to produce a, b overall ratio
     elif args.dataset == 'mnist':
         pass
 
@@ -45,10 +46,28 @@ def al_entropy(model, dataset, args):
     entropies = td.Categorical(probs=y_probs).entropy()
     return torch.argsort(entropies, descending=True)[:args.al_proposal_size]
 
+# note: this is only written for binary classification
+def al_entropy_classrep(model, dataset, args):
+    """
+    Active learning with entropy and class representation for HPD. Returns indices of the selected unlabeled data.
+    """
+    assert args.dataset == 'hdp'
+    poolX, _ = dataset.get_xy_split('unlabeled')
+    y_probs = torch.from_numpy(model.predict_proba(poolX))
+    entropies = td.Categorical(probs=y_probs).entropy()
+    unlabeled_pc = dataset.unlabeled_train_split[dataset.protected_feature]
+    labeled_pc = dataset.labeled_train_split[dataset.protected_feature]
+    prevalence_1 = labeled_pc.mean()
+    representation_score = (unlabeled_pc == 0) / (1 - prevalence_1) + (unlabeled_pc == 1) / prevalence_1
+    scores = entropies + args.kappa * representation_score
+    return torch.argsort(scores, descending=True)[:args.al_proposal_size]
+
+# note: this is only written for mnist / multi-class classification
 def al_cnn_distance(model, dataset, args):
     """
     Active learning with distance for a CNN model on MNIST.
     """
+    assert args.dataset == 'mnist' and args.model == 'cnn'
     poolX, _ = dataset.get_xy_split('unlabeled')
     labeledX, _ = dataset.get_xy_split('labeled')
     pool_embeds = model.forward(poolX, return_embedding=True)
