@@ -48,7 +48,7 @@ def eval(model, dataset, step, args, verbose=False):
     print(f"eval (acc): {eval_accuracy(model, dataset, args, verbose):.4f}")
     
     print("eval (fairness): ")
-    fairness_evals, fairness_metrics = eval_fairness(model, dataset, args, verbose=True)
+    fairness_evals, fairness_metrics = eval_fairness(model, dataset, args, verbose)
     for i, metric in enumerate(fairness_metrics):
         num_classes = 10 if args.dataset == 'mnist' else 3
         for j in range(num_classes):
@@ -57,7 +57,7 @@ def eval(model, dataset, step, args, verbose=False):
 
     print("eval (Explainability): ")
     if args.dataset == 'hdp' or args.dataset == 'spd':
-        eval_explainability(model, dataset, args, verbose=True)
+        eval_explainability(model, dataset, args, verbose)
 
 
 

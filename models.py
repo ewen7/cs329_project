@@ -54,4 +54,4 @@ class CNN(nn.Module):
     
     def predict_proba(self, x):
         y_hat = self.forward(x)
-        return y_hat.numpy()
+        return y_hat.detach().numpy()
