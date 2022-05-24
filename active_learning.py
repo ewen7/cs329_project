@@ -20,7 +20,21 @@ def al_random(model, dataset, args):
     """
     Randomly select a batch of unlabeled data to label. Returns indices of the selected unlabeled data.
     """
-    return torch.from_numpy(np.random.choice(dataset.unlabeled_train_split.shape[0], size=args.al_proposal_size, replace=False))
+    weights = torch.ones(dataset.unlabeled_train_split.shape[0])
+    if args.dataset == 'hdp':
+        unlabeled_pc = dataset.unlabeled_train_split[dataset.protected_feature]
+        labeled_pc = dataset.labeled_train_split[dataset.protected_feature]
+        p_pc = unlabeled_pc.mean()
+        weights[unlabeled_pc == 0] = p_pc / (1 - unlabeled_pc[unlabeled_pc == 0]).sum()
+        weights[unlabeled_pc == 1] = (1 - p_pc) / (unlabeled_pc[unlabeled_pc == 1]).sum()
+        # m, n
+        # a, b
+        # m*a/m(a+b), n*b/n(a+b)
+    elif args.dataset == 'mnist':
+        pass
+
+    weights /= weights.sum()
+    return torch.from_numpy(np.random.choice(dataset.unlabeled_train_split.shape[0], size=args.al_proposal_size, replace=False, p=weights))
 
 def al_entropy(model, dataset, args):
     """

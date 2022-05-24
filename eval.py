@@ -58,6 +58,10 @@ def eval(model, dataset, step, args, verbose=False):
 
         print("eval (Explainability): ")
         eval_explainability(model, dataset, args, verbose=True)
+    if args.dataset == 'mnist':
+        pass
+        # print("eval (fairness): ")
+        # eval_fairness_mnist(model, dataset, args, verbose=True)
 
 
 def eval_accuracy(model, dataset, args, verbose=False):
