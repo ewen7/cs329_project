@@ -44,6 +44,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset', type=str, default='hdp', help='dataset name')
     parser.add_argument('--model', type=str, default='lr', help='model name')
+    parser.add_argument('--name', type=str, default='exp', help='experiment name')
 
     parser.add_argument('--al-iters', type=int, default=100, help='number of loops of active learning')
     parser.add_argument('--al-method', type=str, default='random', help='active learning method')
@@ -80,7 +81,7 @@ if __name__ == '__main__':
     else:
         args.feature_distribution = [float(x) for x in args.feature_distribution]
 
-    log_dir = os.path.join("logs", datetime.datetime.now().strftime("%Y%m%d-%H%M%S")+"-"+args.dataset+"-"+args.model+"-"+args.al_method)
+    log_dir = os.path.join("logs", datetime.datetime.now().strftime("%Y%m%d-%H%M%S")+"-"+args.dataset+"-"+args.model+"-"+args.al_method+"-"+args.name)
     args.summary_writer = Logger(log_dir)
 
     run(args)

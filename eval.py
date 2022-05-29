@@ -45,7 +45,7 @@ def eval(model, dataset, step, args, verbose=False):
     # acc_c0, acc_c1 = eval_accuracy(model, dataset, args, verbose)
     # with summary_writer.as_default(step=10):
 
-    print(f"eval (acc): {eval_accuracy(model, dataset, args, verbose):.4f}")
+    print(f"eval (acc): {eval_accuracy(model, dataset, step, args, verbose):.4f}")
     
     print("eval (fairness): ")
     fairness_evals, fairness_metrics = eval_fairness(model, dataset, args, verbose)
@@ -64,11 +64,14 @@ def eval(model, dataset, step, args, verbose=False):
     if args.dataset == 'hdp' or args.dataset == 'spd':
         eval_explainability(model, dataset, args, verbose)
 
-def eval_accuracy(model, dataset, args, verbose=False):
+def eval_accuracy(model, dataset, step, args, verbose=False):
     X_test, y_test = dataset.get_xy_split('test')
     y_hat = torch.from_numpy(model.predict(X_test))
     
-    return (y_hat == y_test).sum().item() / y_test.shape[0]
+    acc = (y_hat == y_test).sum().item() / y_test.shape[0]
+
+    args.summary_writer.scalar_summary('OVERALL_ACC', acc, step)
+    return acc
 
 def eval_explainability(model, dataset, args, verbose=False):
     """

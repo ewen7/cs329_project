@@ -46,7 +46,10 @@ def al_entropy(model, dataset, args):
     poolX, _ = dataset.get_xy_split('unlabeled')
     y_probs = torch.from_numpy(model.predict_proba(poolX))
     entropies = td.Categorical(probs=y_probs).entropy()
-    return torch.argsort(entropies, descending=True)[:args.al_proposal_size]
+    # return torch.argsort(entropies, descending=True)[:args.al_proposal_size]
+    weights = np.exp(2*entropies.numpy())
+    weights /= weights.sum()
+    return torch.from_numpy(np.random.choice(dataset.unlabeled_train_split.shape[0], size=args.al_proposal_size, replace=False, p=weights))
 
 # note: this is only written for binary classification
 def al_entropy_classrep(model, dataset, args):
@@ -63,7 +66,10 @@ def al_entropy_classrep(model, dataset, args):
     representation_scores = (unlabeled_pc == 0) / (1 - prevalence_1) + (unlabeled_pc == 1) / prevalence_1
     
     scores = entropies * representation_scores
-    return torch.argsort(scores, descending=True)[:args.al_proposal_size]
+    weights = np.exp(2*scores.numpy())
+    weights /= weights.sum()
+    # return torch.argsort(scores, descending=True)[:args.al_proposal_size]
+    return torch.from_numpy(np.random.choice(dataset.unlabeled_train_split.shape[0], size=args.al_proposal_size, replace=False, p=weights))
 
 # note: this is only written for mnist / multi-class classification
 def al_cnn_distance(model, dataset, args):
