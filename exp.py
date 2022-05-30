@@ -12,11 +12,12 @@ from eval import Logger
 import datetime
 import random
 from results import ResultsAggregator
+from tqdm import tqdm
 
 SEEDS = [1729, 42, 123, 2022, 329]
 
 def run(args, verbose=1):
-    print('Seed: ', args.seed)
+    if verbose > 0: print('Seed: ', args.seed)
     np.random.seed(args.seed)
     random.seed(args.seed)
     torch.manual_seed(args.seed)
@@ -30,16 +31,15 @@ def run(args, verbose=1):
     else:
         raise Exception("Unknown dataset.")
 
-    for al_iter in range(args.al_iters + 1):
-        print(f"AL iteration {al_iter}")
+    verbose_tqdm = tqdm if verbose == 0 else lambda x: x
+    for al_iter in verbose_tqdm(range(args.al_iters + 1)):
+        if verbose > 0: print(f"AL iteration {al_iter}")
 
         model = init_model(args)
 
-        train_model(model, dataset, args)
+        train_model(model, dataset, args, verbose=verbose)
 
-        eval(model, dataset, len(dataset), args)
-
-        print()
+        eval(model, dataset, len(dataset), args, verbose=verbose)
 
         if al_iter < args.al_iters:
             proposed_data_indices = active_learning.run(model, dataset, args)
@@ -96,21 +96,30 @@ if __name__ == '__main__':
         args.feature_distribution = [float(x) for x in args.feature_distribution]
 
     if args.al_method == 'all':
+        if os.path.isdir(f'./results/{args.name}'):
+            raise Exception(f"Experiment name {args.name} already exists.")
+        os.mkdir(f'./results/{args.name}')
+
         # run a search across all methods and average over multiple trials
         args.results_aggregator = ResultsAggregator(args)
         for al_method, al_sampling in [('random', None), ('entropy', 'top'), ('entropy', 'weighted'), ('distance', 'top'), ('distance', 'weighted')]:
             args.al_method, args.al_sampling = al_method, al_sampling
-            assert(args.num_trials <= len(SEEDS), 'Number of trials must be less than or equal to the number of predetermined seeds; please add more seeds.')
+            assert args.num_trials <= len(SEEDS), 'Number of trials must be less than or equal to the number of predetermined seeds; please add more seeds.'
             for seed in SEEDS[:args.num_trials]:
                 args.seed = seed
                 args.exp_name = f'{args.name}-{args.dataset}-{args.model}-{args.al_method}-{args.al_sampling}-seed{args.seed}'
                 log_dir = os.path.join("logs", datetime.datetime.now().strftime("%Y%m%d-%H%M%S")+args.exp_name)
                 args.summary_writer = Logger(log_dir)
-                run(args, verbose=-1)
+                print('Running experiment: ', args.exp_name)
+                args.results_aggregator.start(args.exp_name)
+                run(args, verbose=0)
+                args.results_aggregator.finish(args.exp_name)
                 args.results_aggregator.save()
+                breakpoint()
 
     else:
         # run once
+        args.results_aggregator = None
         args.exp_name = f'{args.name}-{args.dataset}-{args.model}-{args.al_method}-{args.al_sampling}-seed{args.seed}'
         log_dir = os.path.join("logs", datetime.datetime.now().strftime("%Y%m%d-%H%M%S")+'-'+args.exp_name)
         args.summary_writer = Logger(log_dir)

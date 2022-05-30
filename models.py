@@ -46,7 +46,7 @@ class CNN(nn.Module):
         if return_embedding: return x
         x = F.dropout(x, training=self.training)
         x = self.fc2(x)
-        return F.log_softmax(x)
+        return F.log_softmax(x, dim=1)
     
     def predict(self, x):
         y_hat = self.forward(x)
