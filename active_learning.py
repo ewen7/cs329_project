@@ -34,7 +34,9 @@ def al_random(model, dataset, args):
         # a, b labeled
         # a/m(a+b), b/n(a+b) weights for unlabeled to produce a, b overall ratio
     elif args.dataset == 'mnist':
-        pass
+        unlabeled_labels = dataset.unlabeled_y_train
+        for i in range(10):
+            weights[unlabeled_labels == i] = args.feature_distribution[i] * unlabeled_labels.shape[0] / unlabeled_labels[unlabeled_labels == i].shape[0]
 
     weights /= weights.sum()
     return torch.from_numpy(np.random.choice(dataset.unlabeled_train_split.shape[0], size=args.al_proposal_size, replace=False, p=weights))
@@ -46,10 +48,14 @@ def al_entropy(model, dataset, args):
     poolX, _ = dataset.get_xy_split('unlabeled')
     y_probs = torch.from_numpy(model.predict_proba(poolX))
     entropies = td.Categorical(probs=y_probs).entropy()
-    # return torch.argsort(entropies, descending=True)[:args.al_proposal_size]
-    weights = np.exp(2*entropies.numpy())
-    weights /= weights.sum()
-    return torch.from_numpy(np.random.choice(dataset.unlabeled_train_split.shape[0], size=args.al_proposal_size, replace=False, p=weights))
+    if args.al_sampling == 'top':
+        return torch.argsort(entropies, descending=True)[:args.al_proposal_size]
+    elif args.al_sampling == 'weighted':
+        weights = np.exp(args.kappa*entropies.numpy())
+        weights /= weights.sum()
+        return torch.from_numpy(np.random.choice(dataset.unlabeled_train_split.shape[0], size=args.al_proposal_size, replace=False, p=weights))
+    else:
+        raise ValueError(f"Unknown active learning sampling method: {args.al_sampling}")
 
 # note: this is only written for binary classification
 def al_entropy_classrep(model, dataset, args):
@@ -66,10 +72,14 @@ def al_entropy_classrep(model, dataset, args):
     representation_scores = (unlabeled_pc == 0) / (1 - prevalence_1) + (unlabeled_pc == 1) / prevalence_1
     
     scores = entropies * representation_scores
-    weights = np.exp(2*scores.numpy())
-    weights /= weights.sum()
-    # return torch.argsort(scores, descending=True)[:args.al_proposal_size]
-    return torch.from_numpy(np.random.choice(dataset.unlabeled_train_split.shape[0], size=args.al_proposal_size, replace=False, p=weights))
+    if args.al_sampling == 'top':
+        return torch.argsort(scores, descending=True)[:args.al_proposal_size]
+    elif args.al_sampling == 'weighted':
+        weights = np.exp(args.kappa*scores.numpy())
+        weights /= weights.sum()
+        return torch.from_numpy(np.random.choice(dataset.unlabeled_train_split.shape[0], size=args.al_proposal_size, replace=False, p=weights))
+    else:
+        raise ValueError(f"Unknown active learning sampling method: {args.al_sampling}")
 
 # note: this is only written for mnist / multi-class classification
 def al_cnn_distance(model, dataset, args):
@@ -84,9 +94,17 @@ def al_cnn_distance(model, dataset, args):
     # compute the average Euclidean distance from each unlabeled point to all the labeled points
     # vectorized (TOO SLOW, DON'T RUN):
     # # distances = (((pool_embeds.unsqueeze(1) - labeled_embeds.unsqueeze(0))**2).sum(dim=2)**0.5).sum(dim=1)
-    print('Computing distances...')
+    # print('Computing distances...')
     distances = np.zeros(pool_embeds.shape[0])
-    for i in tqdm(range(pool_embeds.shape[0])):
+    # for i in tqdm(range(pool_embeds.shape[0])):
+    for i in range(pool_embeds.shape[0]):
         distances[i] = (((pool_embeds[i].unsqueeze(0) - labeled_embeds)**2).sum(dim=1)**0.5).mean().item()
     distances = torch.from_numpy(distances)
-    return torch.argsort(distances, descending=True)[:args.al_proposal_size]
+    if args.al_sampling == 'top':
+        return torch.argsort(distances, descending=True)[:args.al_proposal_size]
+    elif args.al_sampling == 'weighted':
+        weights = np.exp(args.kappa*distances.numpy())
+        weights /= weights.sum()
+        return torch.from_numpy(np.random.choice(dataset.unlabeled_train_split.shape[0], size=args.al_proposal_size, replace=False, p=weights))
+    else:
+        raise ValueError(f"Unknown active learning sampling method: {args.al_sampling}")

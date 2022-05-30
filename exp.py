@@ -46,9 +46,12 @@ if __name__ == '__main__':
     parser.add_argument('--model', type=str, default='lr', help='model name')
     parser.add_argument('--name', type=str, default='exp', help='experiment name')
 
+    # al params
     parser.add_argument('--al-iters', type=int, default=100, help='number of loops of active learning')
     parser.add_argument('--al-method', type=str, default='random', help='active learning method')
     parser.add_argument('--al-proposal-size', type=int, default=100, help='number of unlabeled data to propose')
+    parser.add_argument('--al-sampling', type=str, default='top', help='sampling method for active learning')
+    parser.add_argument('--kappa', type=float, default=2.0, help='active learning weighted sampling pre-softmax scaling')
 
     parser.add_argument('--protected-feature', type=str, default='Sex', help='protected feature to balance')
     parser.add_argument('--feature-to-predict', type=str, default='HeartDisease', help='feature to predict')
