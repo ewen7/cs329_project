@@ -13,6 +13,7 @@ dataset_dir = os.path.join(os.path.dirname(os.path.realpath(
 class BiasedMNISTDataset(Dataset):
 
     def __init__(self, args, dataset_dir=dataset_dir, seed=123):
+        print('Seed: ', seed)
         np.random.seed(seed)
         random.seed(seed)
         torch.manual_seed(seed)
