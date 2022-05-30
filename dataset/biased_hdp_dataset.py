@@ -48,10 +48,6 @@ class BiasedHDPDataset(Dataset):
         self.protected_feature = datasets.protected_feature if datasets.feature_to_predict >= datasets.protected_feature else datasets.protected_feature - 1
 
     def __getitem__(self, index):
-        if self.args.remove_protected_char:
-            feature_index = self.feature_to_loc[self.args.protected_feature]
-            data_point = self.labeled_train_split[index]
-            return data_point[0:feature_index] + data_point[feature_index+1:] 
         return self.labeled_train_split[index]
 
     def __len__(self):
@@ -117,7 +113,22 @@ class BiasedHDPDataset(Dataset):
         else: raise Exception("unknown split")
         if verbose:
             print("train_split", split, to_split.shape, to_split[:, 0 : self.feature_to_predict].shape)
-        X = torch.cat((to_split[:, 0 : self.feature_to_predict], to_split[:, self.feature_to_predict + 1:]), axis=1)
+        
+        if self.args.remove_protected_char:
+            if self.protected_feature > self.feature_to_predict:
+                X = torch.cat((
+                    to_split[:, 0 : self.feature_to_predict], 
+                    to_split[:, self.feature_to_predict + 1 : self.protected_feature], 
+                    to_split[:, self.protected_feature + 1:]
+                ), axis=1)
+            else: 
+                X = torch.cat((
+                    to_split[:, 0 : self.protected_feature], 
+                    to_split[:, self.protected_feature + 1 : self.feature_to_predict], 
+                    to_split[:, self.feature_to_predict + 1:]
+                ), axis=1)
+        else:
+            X = torch.cat((to_split[:, 0 : self.feature_to_predict], to_split[:, self.feature_to_predict + 1:]), axis=1)
         y = to_split[:, self.feature_to_predict]
         if verbose:
             print("balance", X.shape, y.shape)

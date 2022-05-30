@@ -25,8 +25,8 @@ def al_random(model, dataset, args):
     """
     weights = np.ones(dataset.unlabeled_train_split.shape[0])
     if args.dataset == 'hdp':
-        unlabeled_pc = dataset.unlabeled_train_split[:, dataset.protected_feature]
-        labeled_pc = dataset.labeled_train_split[:, dataset.protected_feature]
+        unlabeled_pc = dataset.unlabeled_train_split[:, dataset.protected_feature + 1]
+        labeled_pc = dataset.labeled_train_split[:, dataset.protected_feature + 1]
         p_pc = labeled_pc.mean()
         weights[unlabeled_pc == 0] = (1 - p_pc) / (1 - unlabeled_pc[unlabeled_pc == 0]).sum()
         weights[unlabeled_pc == 1] = p_pc / (unlabeled_pc[unlabeled_pc == 1]).sum()
