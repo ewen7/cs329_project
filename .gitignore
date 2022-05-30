@@ -161,5 +161,4 @@ cython_debug/
 
 dataset/MNIST
 dataset/SPD
-logs
 results
