@@ -1,20 +1,14 @@
 import numpy as np
 import torch
 
-class MNISTRobustness(object):
-    def __init__(self, model, dataset):
-        self.model = model
-        self.dataset = dataset
-        self.X_test, self.y_test = self.dataset.get_xy_split('test')
 
-    def accuracy(self, X_adv, verbose=1):
-        y_hat = torch.from_numpy(self.model.predict(self.X_test))
-        y_adv_hat = torch.from_numpy(self.model.predict(X_adv))
-        
-        test_acc = (y_hat == self.y_test).sum().item() / self.y_test.shape[0]
-        adv_acc = (y_adv_hat == self.y_test).sum().item() / self.y_test.shape[0]
-        
-        if verbose > 0: print(f"robustness accuracies: (test) {test_acc}  (adv) {adv_acc}")
-        return test_acc, adv_acc
-
-# pass in trained model and perturbated images
+def gaussian_perturb(model, dataset, stds, verbose=False):
+    X_test, y_test = dataset.get_xy_split('test')
+    results = np.zeros(len(stds))
+    for i, std in enumerate(stds):
+        perturbation = torch.normal(mean=0.0, std=std, size=X_test.shape)
+        X_adv = torch.clamp(X_test + perturbation, min=0., max=255.)
+        y_hat = torch.from_numpy(model.predict(X_adv))
+        results[i] = (y_hat == y_test).sum().item() / y_test.shape[0]
+        if verbose > 0: print(f"{std:.2f} {results[i]:.4f}")
+    return results

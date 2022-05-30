@@ -55,6 +55,7 @@ def train_mnist(model, dataset, args, verbose=1):
         optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum)
         verbose_tqdm = tqdm if verbose > 0 else lambda x: x
         for epoch in verbose_tqdm(range(args.epochs)):
+            avg_loss = []
             for start_idx in range(0, X_train.shape[0], args.batch_size):
                 batch_size = min(args.batch_size, X_train.shape[0] - start_idx)
                 data = X_train[start_idx : start_idx+batch_size]
@@ -62,6 +63,8 @@ def train_mnist(model, dataset, args, verbose=1):
                 optimizer.zero_grad()
                 output = model(data)
                 loss = F.nll_loss(output, target)
+                avg_loss.append(loss.item())
                 loss.backward()
                 optimizer.step()
+            # print(f'Epoch {epoch+1}/{args.epochs} | Loss: {sum(avg_loss)/len(avg_loss)}')
         model.training = False

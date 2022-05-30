@@ -9,7 +9,7 @@ import pandas as pd
 from builtins import breakpoint
 from fairness import BinaryClassificationBiasDataset
 from explainability import ModelExplainer
-from robustness import MNISTRobustness
+import robustness
 import datetime
 import os
 import tensorflow as tf
@@ -48,7 +48,8 @@ def eval(model, dataset, step, args, verbose=0):
     # acc_c0, acc_c1 = eval_accuracy(model, dataset, args, verbose)
     # with summary_writer.as_default(step=10):
 
-    if verbose > 0: print(f"eval (acc): {eval_accuracy(model, dataset, step, args, verbose):.4f}")
+    overall_acc = eval_accuracy(model, dataset, step, args, verbose)
+    if verbose > 0: print(f"eval (acc): {overall_acc:.4f}")
     
     if verbose > 0: print("eval (fairness): ")
     fairness_evals, fairness_metrics, result_update = eval_fairness(model, dataset, args, verbose, save_excel=False)
@@ -60,6 +61,7 @@ def eval(model, dataset, step, args, verbose=0):
         result_avg = result_update.mean()
         result_avg['class'] = 'avg'
         result_avg['n_train'] = step
+        result_avg['accuracy'] = overall_acc
         result_update = result_update.append(result_avg, ignore_index=True)
         args.results_aggregator.update_fairness(args.exp_name, result_update)
 
@@ -83,7 +85,7 @@ def eval(model, dataset, step, args, verbose=0):
     if args.dataset == 'mnist':
         robustness_results = eval_robustness(model, dataset, step, args, verbose)
         if args.results_aggregator is not None:
-            args.results_aggregator.update_robustness(args.exp_name, step, robustness_results)
+            args.results_aggregator.update_robustness(args.exp_name, robustness_results)
     
 
 def eval_accuracy(model, dataset, step, args, verbose=1):
@@ -149,16 +151,13 @@ def eval_fairness(model, dataset, args, verbose=1, save_excel=True):
 
 # adv_type: 'gaussian'
 def eval_robustness(model, dataset, step, args, verbose=1):
-    # generate adversarial dataset
-    X_test, _ = dataset.get_xy_split('test')
+    if verbose > 0: print("eval robustness")
     if args.adv_type == 'gaussian':
-        perturbation = torch.normal(mean=0.0, std=1.0, size=X_test.shape)
-        X_adv = X_test + perturbation 
-    else: 
+        stds = args.gaussian_stds
+        stds = [0., *stds]
+        robustness_accs = robustness.gaussian_perturb(model, dataset, stds, verbose)
+        for i, std in enumerate(args.gaussian_stds):
+            args.summary_writer.scalar_summary(f'robustness_{std}', robustness_accs[i+1], step)
+        return pd.DataFrame([robustness_accs], columns=stds)
+    else:
         raise Exception("Unknown adv_type for robustness")
-
-    robustness = MNISTRobustness(model, dataset)
-    test_acc, adv_acc = robustness.accuracy(X_adv, verbose=verbose)
-    args.summary_writer.scalar_summary('robustness_test', test_acc, step)
-    args.summary_writer.scalar_summary('robustness_adv', adv_acc, step)
-    return {'test': test_acc, 'adv': adv_acc}

@@ -20,7 +20,6 @@ class BinaryClassificationBiasDataset(object):
 
     def _set_confusion_matrix(self):
         self.num_true_negatives, self.num_false_positives, self.num_false_negatives, self.num_true_positives = metrics.confusion_matrix(self.labels, self.preds).ravel()
-        print("matrix", self.num_true_negatives, self.num_false_positives, self.num_false_negatives, self.num_true_positives)
 
     def true_positives(self):
         return self.num_true_positives
@@ -80,12 +79,16 @@ class BinaryClassificationBiasDataset(object):
         Equal to positive acceptance rate (how many of the predicted positives were actually correct)
         if positive class is favored, else equal to negative acceptance rate
         """
-        total_predicted = self.num_true_positives + self.num_false_positives
-        if total_predicted == 0:
-            return 0 if self.positive_class_favored else 1
-        negative_acceptance_rate = self.num_true_negatives / total_predicted
-        positive_acceptance_rate = self.num_true_positives / total_predicted
-        return positive_acceptance_rate if self.positive_class_favored else negative_acceptance_rate
+        if self.positive_class_favored:
+            total_predicted = self.num_true_positives + self.num_false_positives
+            if total_predicted == 0:
+                return 0 if self.positive_class_favored else 1
+            return self.num_true_positives / total_predicted
+        else:
+            total_predicted = self.num_true_negatives + self.num_false_negatives
+            if total_predicted == 0:
+                return 0 if self.positive_class_favored else 1
+            return self.num_true_negatives / total_predicted
 
     def rejection_rate(self):
         return 1 - self.acceptance_rate()

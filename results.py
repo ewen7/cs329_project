@@ -12,21 +12,22 @@ class ResultsAggregator:
         self.overall_name = args.name
     
     def start(self, exp_name):
-        self.experiments[exp_name] = {'fairness': [], 'robustness': {'test': [], 'adv': []}}
+        self.experiments[exp_name] = {'fairness': [], 'robustness': []}
 
     def update_fairness(self, exp_name, results):
         self.experiments[exp_name]['fairness'].append(results)
     
-    def update_robustness(self, exp_name, step, results):
-        self.experiments[exp_name]['robustness']['test'].append(results['test'])
-        self.experiments[exp_name]['robustness']['adv'].append(results['adv'])
+    def update_robustness(self, exp_name, results):
+        self.experiments[exp_name]['robustness'].append(results)
 
     def finish(self, exp_name, save_excel=True):
         self.experiments[exp_name]['fairness'] = pd.concat(self.experiments[exp_name]['fairness'])
-        self.experiments[exp_name]['robustness']['test'] = np.array(self.experiments[exp_name]['robustness']['test'])
-        self.experiments[exp_name]['robustness']['adv'] = np.array(self.experiments[exp_name]['robustness']['adv'])
+        self.experiments[exp_name]['robustness'] = pd.concat(self.experiments[exp_name]['robustness'])
         if save_excel:
-            self.experiments[exp_name]['fairness'].to_excel(f'./results/{self.overall_name}/{exp_name}.xlsx', index=False, sheet_name='fairness')
+            writer = pd.ExcelWriter(f'./results/{self.overall_name}/{exp_name}.xlsx', engine='xlsxwriter')
+            self.experiments[exp_name]['fairness'].to_excel(writer, index=False, sheet_name='fairness')
+            self.experiments[exp_name]['robustness'].to_excel(writer, index=False, sheet_name='robustness')
+            writer.save()
 
     def save(self, path=None):
         if path is None:
