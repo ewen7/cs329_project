@@ -74,6 +74,7 @@ if __name__ == '__main__':
     parser.add_argument('--train-val-split', type=float, default=0.8, help='train/val split')
     parser.add_argument('--val-test-split', type=float, default=0.5, help='val/test split')
     parser.add_argument('--equalize-dataset', action='store_true', help='equalize dataset')
+    parser.add_argument('--remove-protected-char', action='store_true', help='Removes protected Characteristic from training')
 
     # mnist cnn training params
     parser.add_argument('--epochs', type=int, default=10, help='number of epochs')
@@ -126,7 +127,7 @@ if __name__ == '__main__':
     else:
         # run once
         args.results_aggregator = None
-        args.exp_name = f'{args.name}-{args.dataset}-{args.model}-{args.al_method}-{args.al_sampling}-seed{args.seed}'
+        args.exp_name = f'{args.name}-{args.dataset}-{args.model}-{args.al_method}-{args.al_sampling}-seed{args.seed}-remove_protected_char{args.remove_protected_char}'
         log_dir = os.path.join("logs", datetime.datetime.now().strftime("%Y%m%d-%H%M%S")+'-'+args.exp_name)
         args.summary_writer = Logger(log_dir)
 

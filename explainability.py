@@ -8,9 +8,16 @@ class ModelExplainer():
     def explain_model(self):
         if self.model_name == "LogisticRegression":
             found_predicted_feature = False
+            found_protected_feature = False
             for i, (feature, loc) in enumerate(self.feature_to_loc.items()):
-                found_predicted_feature = found_predicted_feature or self.args.feature_to_predict == feature
-                print(feature, ": ", self.model.coef_[0][loc-found_predicted_feature])
+                if self.args.feature_to_predict == feature:
+                    found_predicted_feature = True
+                    continue
+                elif self.args.protected_feature == feature:
+                    found_protected_feature = True
+                    continue
+                add_protected_char = self.args.remove_protected_char and found_protected_feature
+                print(feature, ": ", self.model.coef_[0][loc-found_predicted_feature - add_protected_char])
         # elif self.model_name == "RandomForestClassifier":
         else:
             raise NotImplementedError

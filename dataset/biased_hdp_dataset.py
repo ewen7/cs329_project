@@ -113,7 +113,22 @@ class BiasedHDPDataset(Dataset):
         else: raise Exception("unknown split")
         if verbose:
             print("train_split", split, to_split.shape, to_split[:, 0 : self.feature_to_predict].shape)
-        X = torch.cat((to_split[:, 0 : self.feature_to_predict], to_split[:, self.feature_to_predict + 1:]), axis=1)
+        
+        if self.args.remove_protected_char:
+            if self.protected_feature > self.feature_to_predict:
+                X = torch.cat((
+                    to_split[:, 0 : self.feature_to_predict], 
+                    to_split[:, self.feature_to_predict + 1 : self.protected_feature], 
+                    to_split[:, self.protected_feature + 1:]
+                ), axis=1)
+            else: 
+                X = torch.cat((
+                    to_split[:, 0 : self.protected_feature], 
+                    to_split[:, self.protected_feature + 1 : self.feature_to_predict], 
+                    to_split[:, self.feature_to_predict + 1:]
+                ), axis=1)
+        else:
+            X = torch.cat((to_split[:, 0 : self.feature_to_predict], to_split[:, self.feature_to_predict + 1:]), axis=1)
         y = to_split[:, self.feature_to_predict]
         if verbose:
             print("balance", X.shape, y.shape)
