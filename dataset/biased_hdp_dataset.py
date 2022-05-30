@@ -48,6 +48,10 @@ class BiasedHDPDataset(Dataset):
         self.protected_feature = datasets.protected_feature if datasets.feature_to_predict >= datasets.protected_feature else datasets.protected_feature - 1
 
     def __getitem__(self, index):
+        if self.args.remove_protected_char:
+            feature_index = self.feature_to_loc[self.args.protected_feature]
+            data_point = self.labeled_train_split[index]
+            return data_point[0:feature_index] + data_point[feature_index+1:] 
         return self.labeled_train_split[index]
 
     def __len__(self):
