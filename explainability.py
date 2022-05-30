@@ -15,9 +15,11 @@ class ModelExplainer():
                     continue
                 elif self.args.protected_feature == feature:
                     found_protected_feature = True
-                    continue
+                    if self.args.remove_protected_char:
+                        continue
                 add_protected_char = self.args.remove_protected_char and found_protected_feature
-                print(feature, ": ", self.model.coef_[0][loc-found_predicted_feature - add_protected_char])
+                if self.args.verbose:
+                    print(feature, ": ", self.model.coef_[0][loc-found_predicted_feature - add_protected_char])
         # elif self.model_name == "RandomForestClassifier":
         else:
             raise NotImplementedError

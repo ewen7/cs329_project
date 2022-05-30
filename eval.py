@@ -67,7 +67,7 @@ def eval(model, dataset, step, args, verbose=0):
 
     # log
     for i, metric in enumerate(fairness_metrics):
-        num_classes = 10 if args.dataset == 'mnist' else 2
+        num_classes = 10 if args.dataset == 'mnist' else 3
         for j in range(num_classes):
             args.summary_writer.scalar_summary(metric + '_c' + str(j), fairness_evals[j][i], step)
         if args.dataset == 'hdp':
@@ -117,9 +117,13 @@ def eval_fairness(model, dataset, args, verbose=1, save_excel=True):
 
     y_hats, y_tests = [], []
     if args.dataset == 'hdp':
-        num_classes = 2
-        y_hats = [y_hat, 1 - y_hat] 
-        y_tests = [y_test, 1 - y_test]
+        num_classes = 3
+        X_protected = X_test[:, dataset.protected_feature]
+        y_hat0, y_hat1 = y_hat[np.array(X_protected == 0)], y_hat[np.array(X_protected == 1)]        
+        y_test0, y_test1 = y_test[np.array(X_protected == 0)], y_test[np.array(X_protected == 1)]        
+        y_hats = [y_hat0, y_hat1, y_hat] 
+        y_tests = [y_test0, y_test1, y_test]
+
     elif args.dataset == 'mnist':
         num_classes = 10
         for c in range(num_classes):
