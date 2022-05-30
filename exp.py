@@ -102,7 +102,7 @@ if __name__ == '__main__':
 
         # run a search across all methods and average over multiple trials
         args.results_aggregator = ResultsAggregator(args)
-        for al_method, al_sampling in [('random', None), ('entropy', 'top'), ('entropy', 'weighted'), ('distance', 'top'), ('distance', 'weighted')]:
+        for al_method, al_sampling in [('random', None), ('entropy', 'top'), ('entropy', 'weighted'), ('cnn_distance', 'top'), ('cnn_distance', 'weighted')]:
             args.al_method, args.al_sampling = al_method, al_sampling
             assert args.num_trials <= len(SEEDS), 'Number of trials must be less than or equal to the number of predetermined seeds; please add more seeds.'
             for seed in SEEDS[:args.num_trials]:
