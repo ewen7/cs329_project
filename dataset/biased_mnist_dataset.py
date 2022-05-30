@@ -22,73 +22,73 @@ class BiasedMNISTDataset(Dataset):
         self.test_dataset = MNIST(root=dataset_dir, train=False, download=True)
 
         self.all_X_train = self.train_dataset.data.float()
-        self.all_Y_train = self.train_dataset.targets
+        self.all_y_train = self.train_dataset.targets
         self.all_X_test = self.test_dataset.data.float()
-        self.all_Y_test = self.test_dataset.targets
+        self.all_y_test = self.test_dataset.targets
 
         # process dataset to bias it by args.feature_distribution
         self.labeled_X_train = []
-        self.labeled_Y_train = []
+        self.labeled_y_train = []
         self.unlabeled_X_train = []
-        self.unlabeled_Y_train = []
+        self.unlabeled_y_train = []
         for label in range(10):
-            indices = np.where(self.all_Y_train == label)[0]
+            indices = np.where(self.all_y_train == label)[0]
             num_to_select = int(len(self.train_dataset) * args.feature_distribution[label] * args.dataset_split)
             if num_to_select == 0:
                 continue
             # select num_to_select data points randomly
             selected_indices = np.random.choice(indices, num_to_select, replace=False)
             self.labeled_X_train.append(self.all_X_train[selected_indices])
-            self.labeled_Y_train.append(self.all_Y_train[selected_indices])
+            self.labeled_y_train.append(self.all_y_train[selected_indices])
             # add everything else to unlabeled dataset
             still_unlabeled = np.zeros(len(self.train_dataset), dtype=bool)
             still_unlabeled[indices] = True
             still_unlabeled[selected_indices] = False
             self.unlabeled_X_train.append(self.all_X_train[still_unlabeled])
-            self.unlabeled_Y_train.append(self.all_Y_train[still_unlabeled])
+            self.unlabeled_y_train.append(self.all_y_train[still_unlabeled])
         
         self.labeled_X_train = torch.cat(self.labeled_X_train, dim=0)
-        self.labeled_Y_train = torch.cat(self.labeled_Y_train, dim=0)
+        self.labeled_y_train = torch.cat(self.labeled_y_train, dim=0)
         self.unlabeled_X_train = torch.cat(self.unlabeled_X_train, dim=0)
-        self.unlabeled_Y_train = torch.cat(self.unlabeled_Y_train, dim=0)
+        self.unlabeled_y_train = torch.cat(self.unlabeled_y_train, dim=0)
 
         self.unlabeled_train_split = self.unlabeled_X_train
 
         # randomly shuffle indices of labeled data
         shuffled_indices = torch.randperm(self.labeled_X_train.size()[0])
         self.labeled_X_train = self.labeled_X_train[shuffled_indices]
-        self.labeled_Y_train = self.labeled_Y_train[shuffled_indices]
+        self.labeled_y_train = self.labeled_y_train[shuffled_indices]
 
         # if using logistic regression, reshape to (B, 784) instead of (B, 1, 28, 28)
         self.model = args.model
 
     def __getitem__(self, index):
-        return self.labeled_X_train[index], self.labeled_Y_train[index]
+        return self.labeled_X_train[index], self.labeled_y_train[index]
     
     def __len__(self):
         return self.labeled_X_train.size()[0]
     
     def update(self, proposed_data_indices):
         new_X_labeled = torch.index_select(self.unlabeled_X_train, 0, proposed_data_indices)
-        new_Y_labeled = torch.index_select(self.unlabeled_Y_train, 0, proposed_data_indices)
+        new_y_labeled = torch.index_select(self.unlabeled_y_train, 0, proposed_data_indices)
         
         self.labeled_X_train = torch.cat((self.labeled_X_train, new_X_labeled), dim=0)
-        self.labeled_Y_train = torch.cat((self.labeled_Y_train, new_Y_labeled), dim=0)
+        self.labeled_y_train = torch.cat((self.labeled_y_train, new_y_labeled), dim=0)
         
         still_unlabeled = torch.ones(self.unlabeled_train_split.shape[0], dtype=bool)
         still_unlabeled[proposed_data_indices] = False
         self.unlabeled_train_split = self.unlabeled_train_split[still_unlabeled]
         self.unlabeled_X_train = self.unlabeled_X_train[still_unlabeled]
-        self.unlabeled_Y_train = self.unlabeled_Y_train[still_unlabeled]
+        self.unlabeled_y_train = self.unlabeled_y_train[still_unlabeled]
 
     def get_xy_split(self, split): # split: 'labeled', 'unlabeled', 'test'
         X, y = None, None
         if split == 'labeled':
-            X, y = self.labeled_X_train, self.labeled_Y_train
+            X, y = self.labeled_X_train, self.labeled_y_train
         elif split == 'unlabeled':
-            X, y = self.unlabeled_X_train, self.unlabeled_Y_train
+            X, y = self.unlabeled_X_train, self.unlabeled_y_train
         elif split == 'test':
-            X, y = self.all_X_test, self.all_Y_test
+            X, y = self.all_X_test, self.all_y_test
         else: raise Exception("unknown split")
 
         if self.model == 'lr':

@@ -34,9 +34,9 @@ def al_random(model, dataset, args):
         # a, b labeled
         # a/m(a+b), b/n(a+b) weights for unlabeled to produce a, b overall ratio
     elif args.dataset == 'mnist':
-        # TODO (emily): implement this
-        # use args.dataset_split
-        pass
+        unlabeled_labels = dataset.unlabeled_y_train
+        for i in range(10):
+            weights[unlabeled_labels == i] = args.feature_distribution[i] * unlabeled_labels.shape[0] / unlabeled_labels[unlabeled_labels == i].shape[0]
 
     weights /= weights.sum()
     return torch.from_numpy(np.random.choice(dataset.unlabeled_train_split.shape[0], size=args.al_proposal_size, replace=False, p=weights))
