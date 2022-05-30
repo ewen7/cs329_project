@@ -7,6 +7,7 @@ import pandas as pd
 from builtins import breakpoint
 from fairness import BinaryClassificationBiasDataset
 from explainability import ModelExplainer
+from robustness import MNISTRobustness
 import datetime
 import os
 import tensorflow as tf
@@ -74,6 +75,11 @@ def eval(model, dataset, step, args, verbose=False):
     if args.dataset == 'hdp' or args.dataset == 'spd':
         eval_explainability(model, dataset, args, verbose)
 
+    print(f"eval (Robustness): ")
+    if args.dataset == 'mnist':
+        eval_robustness(model, dataset, step, args, verbose)
+    
+
 def eval_accuracy(model, dataset, step, args, verbose=False):
     X_test, y_test = dataset.get_xy_split('test')
     y_hat = torch.from_numpy(model.predict(X_test))
@@ -137,3 +143,17 @@ def eval_fairness(model, dataset, args, verbose=True, save=True):
         df.T.to_excel('./results/multi_eval_metrics.xlsx', sheet_name='sheet1', index=False)
     return fairness_evals, fairness_metrics, df.T
 
+# adv_type: 'gaussian'
+def eval_robustness(model, dataset, step, args, verbose=False):
+    # generate adversarial dataset
+    X_test, _ = dataset.get_xy_split('test')
+    if args.adv_type == 'gaussian':
+        perturbation = torch.normal(mean=0.0, std=1.0, size=X_test.shape)
+        X_adv = X_test + perturbation 
+    else: 
+        raise Exception("Unknown adv_type for robustness")
+
+    robustness = MNISTRobustness(model, dataset)
+    test_acc, adv_acc = robustness.accuracy(X_adv)
+    args.summary_writer.scalar_summary('robustness_test', test_acc, step)
+    args.summary_writer.scalar_summary('robustness_adv', adv_acc, step)

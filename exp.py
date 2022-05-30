@@ -77,9 +77,10 @@ if __name__ == '__main__':
 
     # mnist cnn training params
     parser.add_argument('--epochs', type=int, default=10, help='number of epochs')
-    parser.add_argument('--batch_size', type=int, default=20, help='batch size')
+    parser.add_argument('--batch-size', type=int, default=20, help='batch size')
     parser.add_argument('--lr', type=float, default=0.01, help='learning rate')
     parser.add_argument('--momentum', type=float, default=0.5, help='momentum')
+    parser.add_argument('--adv-type', type=str, default='gaussian', help='method of generating adversarial data')
 
     args = parser.parse_args()
 
