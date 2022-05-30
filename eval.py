@@ -48,7 +48,17 @@ def eval(model, dataset, step, args, verbose=False):
     print(f"eval (acc): {eval_accuracy(model, dataset, step, args, verbose):.4f}")
     
     print("eval (fairness): ")
-    fairness_evals, fairness_metrics = eval_fairness(model, dataset, args, verbose)
+    fairness_evals, fairness_metrics, result_update = eval_fairness(model, dataset, args, verbose)
+
+    # send to aggregator
+    result_update['class'] = list(range(10))
+    result_update['n_train'] = [step] * 10
+    result_avg = result_update.mean()
+    result_avg['class'] = 'avg'
+    result_update = result_update.append(result_avg, ignore_index=True)
+    args.results_aggregator.update(args.exp_name, result_update)
+
+    # log
     for i, metric in enumerate(fairness_metrics):
         num_classes = 10 if args.dataset == 'mnist' else 3
         for j in range(num_classes):
@@ -125,5 +135,5 @@ def eval_fairness(model, dataset, args, verbose=True, save=True):
     print("Eval Fairness Complete")
     if save:
         df.T.to_excel('./results/multi_eval_metrics.xlsx', sheet_name='sheet1', index=False)
-    return fairness_evals, fairness_metrics
+    return fairness_evals, fairness_metrics, df.T
 

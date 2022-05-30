@@ -9,8 +9,6 @@ import pandas as pd
 import os
 import copy
 
-# For Consistency
-torch.manual_seed(1024)
 dataset_dir = os.path.join(os.path.dirname(os.path.realpath(
     __file__)), 'HDP/heart_2020_cleaned.csv')
 

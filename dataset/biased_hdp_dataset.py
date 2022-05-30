@@ -20,10 +20,7 @@ class Namespace:
 class BiasedHDPDataset(Dataset):
 
     # prep_dataset basically calls init
-    def __init__(self, args, dataset_dir=dataset_dir, seed=1729):
-        np.random.seed(seed)
-        random.seed(seed)
-        torch.manual_seed(seed)
+    def __init__(self, args, dataset_dir=dataset_dir):
         # load entire HDP dataset
         # run the logic of redistribute
         # args.percent_labelled

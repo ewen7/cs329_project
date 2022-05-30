@@ -10,9 +10,17 @@ from dataset import BiasedHDPDataset, BiasedSPDDataset, BiasedMNISTDataset
 import os
 from eval import Logger
 import datetime
+import random
+from results import ResultsAggregator
 
+SEEDS = [1729, 42, 123, 2022, 329]
 
-def run(args):
+def run(args, verbose=1):
+    print('Seed: ', args.seed)
+    np.random.seed(args.seed)
+    random.seed(args.seed)
+    torch.manual_seed(args.seed)
+
     if args.dataset == 'spd':
         dataset = BiasedSPDDataset(args)
     elif args.dataset == 'hdp':
@@ -45,6 +53,8 @@ if __name__ == '__main__':
     parser.add_argument('--dataset', type=str, default='hdp', help='dataset name')
     parser.add_argument('--model', type=str, default='lr', help='model name')
     parser.add_argument('--name', type=str, default='exp', help='experiment name')
+    parser.add_argument('--seed', type=int, default=1729, help='random seed')
+    parser.add_argument('--num-trials', type=int, default=1, help='number of times to run each experiment')
 
     # al params
     parser.add_argument('--al-iters', type=int, default=100, help='number of loops of active learning')
@@ -84,7 +94,24 @@ if __name__ == '__main__':
     else:
         args.feature_distribution = [float(x) for x in args.feature_distribution]
 
-    log_dir = os.path.join("logs", datetime.datetime.now().strftime("%Y%m%d-%H%M%S")+"-"+args.dataset+"-"+args.model+"-"+args.al_method+"-"+args.name)
-    args.summary_writer = Logger(log_dir)
+    if args.al_method == 'all':
+        # run a search across all methods and average over multiple trials
+        args.results_aggregator = ResultsAggregator(args)
+        for al_method, al_sampling in [('random', None), ('entropy', 'top'), ('entropy', 'weighted'), ('distance', 'top'), ('distance', 'weighted')]:
+            args.al_method, args.al_sampling = al_method, al_sampling
+            assert(args.num_trials <= len(SEEDS), 'Number of trials must be less than or equal to the number of predetermined seeds; please add more seeds.')
+            for seed in SEEDS[:args.num_trials]:
+                args.seed = seed
+                args.exp_name = f'{args.name}-{args.dataset}-{args.model}-{args.al_method}-{args.al_sampling}-seed{args.seed}'
+                log_dir = os.path.join("logs", datetime.datetime.now().strftime("%Y%m%d-%H%M%S")+args.exp_name)
+                args.summary_writer = Logger(log_dir)
+                run(args, verbose=-1)
+                args.results_aggregator.save()
 
-    run(args)
+    else:
+        # run once
+        args.exp_name = f'{args.name}-{args.dataset}-{args.model}-{args.al_method}-{args.al_sampling}-seed{args.seed}'
+        log_dir = os.path.join("logs", datetime.datetime.now().strftime("%Y%m%d-%H%M%S")+'-'+args.exp_name)
+        args.summary_writer = Logger(log_dir)
+
+        run(args)

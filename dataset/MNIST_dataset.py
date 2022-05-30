@@ -8,7 +8,6 @@ import os
 import copy
 
 # For Consistency
-torch.manual_seed(1024)
 dataset_dir = os.path.dirname(os.path.realpath(__file__))
 
 
@@ -107,7 +106,7 @@ def get_minst_datasets(dataset_dir=dataset_dir, config={}, verbose=False):
                      config.get('train_val_split', 0.8))
     val_size = len(train_val_dataset) - train_size
     train_dataset, val_dataset = torch.utils.data.random_split(
-        train_val_dataset, [train_size, val_size])  # with manual torch seed
+        train_val_dataset, [train_size, val_size])
 
     train_dataset = train_dataset.dataset
     val_dataset = val_dataset.dataset
