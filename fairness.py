@@ -19,8 +19,8 @@ class BinaryClassificationBiasDataset(object):
         self._set_confusion_matrix()
 
     def _set_confusion_matrix(self):
-        self.num_true_negatives, self.num_false_positives, self.num_false_negatives, self.num_true_positives = metrics.confusion_matrix(
-            self.labels, self.preds).ravel()
+        self.num_true_negatives, self.num_false_positives, self.num_false_negatives, self.num_true_positives = metrics.confusion_matrix(self.labels, self.preds).ravel()
+        print("matrix", self.num_true_negatives, self.num_false_positives, self.num_false_negatives, self.num_true_positives)
 
     def true_positives(self):
         return self.num_true_positives
@@ -35,10 +35,10 @@ class BinaryClassificationBiasDataset(object):
         return self.num_false_negatives
 
     def true_positive_rate(self):
-        return self.num_true_positives / self.num_true_positives + self.num_false_negatives
+        return self.num_true_positives / (self.num_true_positives + self.num_false_negatives)
 
     def false_positive_rate(self):
-        return self.num_false_positives / self.num_false_positives + self.num_true_negatives
+        return self.num_false_positives / (self.num_false_positives + self.num_true_negatives)
 
     def true_negative_rate(self):
         return 1 - self.false_positive_rate()

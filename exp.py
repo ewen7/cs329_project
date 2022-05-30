@@ -115,7 +115,7 @@ if __name__ == '__main__':
                 run(args, verbose=0)
                 args.results_aggregator.finish(args.exp_name)
                 args.results_aggregator.save()
-                breakpoint()
+                # breakpoint()
 
     else:
         # run once

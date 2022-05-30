@@ -123,7 +123,7 @@ def eval_fairness(model, dataset, args, verbose=1, save_excel=True):
         num_classes = 10
         for c in range(num_classes):
             y_hats.append(y_hat == c)
-            y_tests.append(y_test == c) 
+            y_tests.append(y_test == c)
     else:
         raise Exception("Unknown Dataset")
     
