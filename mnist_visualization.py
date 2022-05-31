@@ -11,10 +11,10 @@ def generate_plots(all_results, type): # type = 'fairness' or 'robustness'
         'treatment_equality_rate', 'equality_of_opportunity',
         'average_odds', 'acceptance_rate', 'rejection_rate']
     elif type == 'robustness':
-        metrics = [16, 43, 48]
+        metrics = ['16', '32', '48']
     else:
         raise Exception('Unknown Type')
-    results = {metric: {} for metric in metrics}
+    visualization_results = {metric: {} for metric in metrics}
 
     trial_names = all_results.keys()
     for trial_name in trial_names:
@@ -22,21 +22,22 @@ def generate_plots(all_results, type): # type = 'fairness' or 'robustness'
         
         df = all_results[trial_name][type]
         if type == 'fairness': df = df[df['class'] == 'avg']
-        breakpoint()
+        df.columns = df.columns.astype('int').astype(str)
+        df = df.reset_index()
         for idx, row in df.iterrows():
             if type == 'fairness': idx = row['n_train']
             for metric in metrics:
                 if metric == 'n_train': continue
-                results_by_metric = results[metric]
+                results_by_metric = visualization_results[metric]
                 if al_type not in results_by_metric: results_by_metric[al_type] = {}
                 if idx not in results_by_metric[al_type]: results_by_metric[al_type][idx] = []
                 results_by_metric[al_type][idx].append(row[metric])
 
     for metric in metrics:
-        al_types = results[metric].keys()
+        al_types = visualization_results[metric].keys()
         fig, ax = plt.subplots(nrows=1, ncols=1)
         for al_type in al_types:
-            results_by_type = results[metric][al_type]
+            results_by_type = visualization_results[metric][al_type]
             n_trains = results_by_type.keys()
             ax.plot(n_trains, [np.mean(results_by_type[n_train]) for n_train in n_trains], label=al_type)
         ax.legend()
