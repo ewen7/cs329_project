@@ -1,0 +1,29 @@
+results/
+    penguin/
+        all_results.pkl
+
+all_results
+{
+    'penguin-mnist-cnn-entropy-top-seed1337': {'fairness': fairness_df, 'robustness': robustness_df},
+    'penguin-mnist-cnn-entropy-top-seed123': {'fairness': fairness_df, 'robustness': robustness_df},
+    'penguin-mnist-cnn-entropy-top-seed2022': {'fairness': fairness_df, 'robustness': robustness_df},
+    'penguin-mnist-cnn-entropy-top-seed42': {'fairness': fairness_df, 'robustness': robustness_df},
+    'penguin-mnist-cnn-entropy-weighted-seed1337': {'fairness': fairness_df, 'robustness': robustness_df},
+    'penguin-mnist-cnn-entropy-weighted-seed123': {'fairness': fairness_df, 'robustness': robustness_df},
+    'penguin-mnist-cnn-entropy-weighted-seed2022': {'fairness': fairness_df, 'robustness': robustness_df},
+    'penguin-mnist-cnn-entropy-weighed-seed42': {'fairness': fairness_df, 'robustness': robustness_df},
+ '...': ...}
+
+visualize_exp(exp_name)
+
+e.g. exp_name = 'penguin'
+
+this function should:
+- unpickle all_results in penguin folder
+- generate M plots, where there are M fairness metrics
+    - each plot should have 5 data lines on it, corresponding to 'random-None', 'entropy-top', 'entropy-weighted', 'distance-top', 'distance-weighted'
+    - each data line should average over all the seeds that are run with it
+    - save the plots to results/exp_name/{fairness_metric}.png
+- generate R plots, where there are R robustness metrics (one for each of the nonzero columns in the robustness sheet)
+    - same spec as fairness plots
+    - save to results/exp_name/robustness_{gaussian_std}.png
